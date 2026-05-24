@@ -1,0 +1,27 @@
+# Connect at https://dashboard.render.com → New → Blueprint
+# After deploy, set these manually in the Render dashboard:
+#   GROQ_API_KEY   — from console.groq.com/keys
+#   DATABASE_URL   — from Neon (postgres://... connection string)
+#   CORTEX_AUTH_URL — URL of your deployed cortex-auth service
+services:
+  - type: web
+    name: conduit-api
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        value: https://sameeradsv.github.io,http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001
+      - key: CORTEX_AUTH_URL
+        sync: false
+      - key: AUTH_REQUIRED
+        value: "false"
+      - key: PYTHON_VERSION
+        value: "3.12"

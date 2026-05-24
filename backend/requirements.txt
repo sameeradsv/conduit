@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+groq
+python-dotenv
+pydantic>=2
+httpx
+sqlalchemy>=2.0
+psycopg2-binary
