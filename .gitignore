@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Next.js
+frontend/.next/
+frontend/out/
+frontend/.swc/
+
+# PWA (generated at build time)
+frontend/public/sw.js
+frontend/public/sw.js.map
+frontend/public/workbox-*.js
+frontend/public/workbox-*.js.map
+frontend/public/worker-*.js
+frontend/public/worker-*.js.map
+frontend/public/fallback-*.js
+frontend/public/fallback-*.js.map
+
+# Build output
+frontend/.next/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Backend local data
+backend/data/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
