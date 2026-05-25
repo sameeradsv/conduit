@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { SWRegistrar } from "@/components/SWRegistrar";
 import "./globals.css";
 
 const jetbrains = JetBrains_Mono({
@@ -17,7 +18,6 @@ export const metadata: Metadata = {
   applicationName: APP_NAME,
   title: { default: APP_NAME, template: `%s | ${APP_NAME}` },
   description: "Terminal-style multi-model AI chat",
-  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -65,6 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </AuthProvider>
         </ThemeProvider>
+        <SWRegistrar />
       </body>
     </html>
   );

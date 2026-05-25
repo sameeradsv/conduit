@@ -42,6 +42,7 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
     h = _headers(token)
     try:
         async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+            # ── Read tools ────────────────────────────────────────────
             if name == "get_my_tasks":
                 r = await client.get(f"{settings.circuit_url}/api/tasks", headers=h)
                 r.raise_for_status()
@@ -80,6 +81,53 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
                 r = await client.post(f"{settings.chef_url}/decision/cook-vs-order", json={}, headers=h)
                 r.raise_for_status()
                 return json.dumps(r.json())
+
+            # ── Write tools ───────────────────────────────────────────
+            elif name == "create_task":
+                payload: dict = {"text": args["text"]}
+                for field in ("tag", "effort", "urgency", "importance"):
+                    if args.get(field) is not None:
+                        payload[field] = args[field]
+                r = await client.post(f"{settings.circuit_url}/api/tasks", json=payload, headers=h)
+                r.raise_for_status()
+                task = r.json()
+                return json.dumps({"id": task.get("id"), "text": task.get("text")})
+
+            elif name == "log_interaction":
+                # Resolve person names → canopy person IDs
+                participant_ids = []
+                for person_name in args.get("person_names", []):
+                    r = await client.get(
+                        f"{settings.canopy_url}/api/people",
+                        params={"q": person_name},
+                        headers=h,
+                    )
+                    if r.status_code == 200:
+                        people = r.json()
+                        if people:
+                            participant_ids.append(people[0]["id"])
+
+                payload = {
+                    "observation": args["observation"],
+                    "participant_ids": participant_ids,
+                    "tag_names": args.get("tag_names", []),
+                }
+                for field in ("context", "outcome", "occurred_at"):
+                    if args.get(field):
+                        payload[field] = args[field]
+
+                r = await client.post(f"{settings.canopy_url}/api/interactions", json=payload, headers=h)
+                r.raise_for_status()
+                return json.dumps({"saved": True, "participants_resolved": len(participant_ids)})
+
+            elif name == "log_meal":
+                payload = {"decision": args["decision"]}
+                for field in ("recipe_name", "cuisine", "satisfaction"):
+                    if args.get(field) is not None:
+                        payload[field] = args[field]
+                r = await client.post(f"{settings.chef_url}/history", json=payload, headers=h)
+                r.raise_for_status()
+                return json.dumps({"saved": True})
 
             else:
                 return json.dumps({"error": f"unknown tool: {name}"})

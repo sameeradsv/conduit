@@ -7,9 +7,10 @@ interface Props {
   onAbort: () => void;
   disabled: boolean;
   streaming: boolean;
+  placeholder?: string;
 }
 
-export function CommandInput({ onSend, onAbort, disabled, streaming }: Props) {
+export function CommandInput({ onSend, onAbort, disabled, streaming, placeholder }: Props) {
   const [value, setValue] = useState("");
   const [history, setHistory] = useState<string[]>([]);
   const [historyIdx, setHistoryIdx] = useState(-1);
@@ -74,7 +75,7 @@ export function CommandInput({ onSend, onAbort, disabled, streaming }: Props) {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder={streaming ? "streaming…" : "type a message or /help"}
+        placeholder={streaming ? "streaming…" : (placeholder ?? "type a message or /help")}
         rows={1}
         spellCheck={false}
         autoComplete="off"

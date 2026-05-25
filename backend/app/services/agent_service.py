@@ -5,7 +5,7 @@ from typing import AsyncIterator, Optional
 from groq import AsyncGroq
 
 from app.schemas import ChatMessage
-from app.tools.definitions import TOOLS
+from app.tools.definitions import READ_TOOLS, WRITE_TOOLS
 from app.tools.executor import execute_tool
 
 _AGENT_SYSTEM = (
@@ -17,6 +17,17 @@ _AGENT_SYSTEM = (
     "Use the tools when the user asks about their tasks, people, or food. "
     "If a sibling app is unreachable, acknowledge it and continue. "
     "Keep responses concise and terminal-appropriate."
+)
+
+_DIARY_SYSTEM = (
+    "You are a silent data router. The user will provide diary-style notes. "
+    "Your ONLY job is to extract items and call the appropriate write tools. "
+    "Do NOT generate any prose response — only call tools.\n"
+    "Rules:\n"
+    "- Tasks, todos, plans, things to do → create_task (one call per task)\n"
+    "- Interactions with people, meetings, conversations → log_interaction (one call per interaction)\n"
+    "- Meals, food, what was eaten/cooked/ordered → log_meal (one call per meal)\n"
+    "Call multiple tools when multiple items are present. Extract all available detail."
 )
 
 _TOOL_CALL_MODELS = {
@@ -33,27 +44,28 @@ def _client() -> AsyncGroq:
     return AsyncGroq(api_key=api_key)
 
 
-def _inject_system(messages: list[dict]) -> list[dict]:
-    if messages and messages[0]["role"] == "system":
-        existing = messages[0]["content"]
-        messages[0]["content"] = f"{_AGENT_SYSTEM}\n\n{existing}"
-        return messages
-    return [{"role": "system", "content": _AGENT_SYSTEM}] + messages
+def _build_messages(messages: list[ChatMessage], system: str) -> list[dict]:
+    raw = [{"role": m.role, "content": m.content} for m in messages]
+    if raw and raw[0]["role"] == "system":
+        raw[0]["content"] = f"{system}\n\n{raw[0]['content']}"
+        return raw
+    return [{"role": "system", "content": system}] + raw
 
 
 async def stream_agent_chat(
     messages: list[ChatMessage],
     model: str,
+    diary: bool = False,
     sibling_token: Optional[str] = None,
     max_tokens: int = 1024,
     temperature: float = 0.7,
 ) -> AsyncIterator[dict]:
     client = _client()
-    groq_messages = _inject_system(
-        [{"role": m.role, "content": m.content} for m in messages]
-    )
+    system = _DIARY_SYSTEM if diary else _AGENT_SYSTEM
+    tools = WRITE_TOOLS if diary else READ_TOOLS
 
-    # Only pass tools for models that support function calling
+    groq_messages = _build_messages(messages, system)
+
     use_tools = model in _TOOL_CALL_MODELS
     create_kwargs: dict = dict(
         model=model,
@@ -63,7 +75,7 @@ async def stream_agent_chat(
         stream=False,
     )
     if use_tools:
-        create_kwargs["tools"] = TOOLS
+        create_kwargs["tools"] = tools
         create_kwargs["tool_choice"] = "auto"
 
     response = await client.chat.completions.create(**create_kwargs)
@@ -72,7 +84,6 @@ async def stream_agent_chat(
     if use_tools and choice.finish_reason == "tool_calls":
         tool_calls = choice.message.tool_calls
 
-        # Append assistant turn with tool_calls into history
         groq_messages.append({
             "role": "assistant",
             "content": choice.message.content or "",
@@ -89,35 +100,46 @@ async def stream_agent_chat(
             ],
         })
 
-        # Execute each tool and append results
+        confirmations = []
+
         for tc in tool_calls:
             yield {"status": "calling_tool", "tool": tc.function.name}
             try:
                 args = json.loads(tc.function.arguments or "{}")
             except json.JSONDecodeError:
                 args = {}
-            result = await execute_tool(tc.function.name, args, sibling_token)
-            groq_messages.append({
-                "role": "tool",
-                "tool_call_id": tc.id,
-                "content": result,
-            })
+            result_str = await execute_tool(tc.function.name, args, sibling_token)
+            result_data = json.loads(result_str)
+            success = "error" not in result_data
 
-        # Stream the final synthesised response
-        stream = await client.chat.completions.create(
-            model=model,
-            messages=groq_messages,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            stream=True,
-        )
-        async for chunk in stream:
-            delta = chunk.choices[0].delta.content
-            if delta:
-                yield {"delta": delta}
+            if diary:
+                confirmations.append({"tool": tc.function.name, "success": success})
+            else:
+                groq_messages.append({
+                    "role": "tool",
+                    "tool_call_id": tc.id,
+                    "content": result_str,
+                })
+
+        if diary:
+            yield {"confirmation": confirmations}
+        else:
+            stream = await client.chat.completions.create(
+                model=model,
+                messages=groq_messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                stream=True,
+            )
+            async for chunk in stream:
+                delta = chunk.choices[0].delta.content
+                if delta:
+                    yield {"delta": delta}
+
+    elif diary:
+        yield {"confirmation": []}
 
     else:
-        # No tool calls — yield the full content as one delta
         content = choice.message.content or ""
         if content:
             yield {"delta": content}

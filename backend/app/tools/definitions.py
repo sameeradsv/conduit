@@ -1,4 +1,4 @@
-TOOLS = [
+READ_TOOLS = [
     {
         "type": "function",
         "function": {
@@ -98,6 +98,119 @@ TOOLS = [
                 "current energy, time, budget, and pantry state. Returns a recommendation with reasoning."
             ),
             "parameters": {"type": "object", "properties": {}, "required": []},
+        },
+    },
+]
+
+WRITE_TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "create_task",
+            "description": (
+                "Create a new task in Circuit. Use for any todo, plan, or thing the user needs to do."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "text": {
+                        "type": "string",
+                        "description": "Full task description",
+                    },
+                    "tag": {
+                        "type": "string",
+                        "description": "Category tag (e.g. work, personal, health, errands)",
+                    },
+                    "effort": {
+                        "type": "string",
+                        "enum": ["low", "medium", "high"],
+                        "description": "Estimated effort level",
+                    },
+                    "urgency": {
+                        "type": "number",
+                        "description": "Urgency 0.0–1.0 (1.0 = must do today)",
+                    },
+                    "importance": {
+                        "type": "number",
+                        "description": "Importance 0.0–1.0 (1.0 = critical)",
+                    },
+                },
+                "required": ["text"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "log_interaction",
+            "description": (
+                "Log an interaction with one or more people in Canopy. "
+                "Use for meetings, calls, conversations, or any contact with someone."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "observation": {
+                        "type": "string",
+                        "description": "What happened — the key observation or summary of the interaction",
+                    },
+                    "context": {
+                        "type": "string",
+                        "description": "Where or why the interaction occurred",
+                    },
+                    "outcome": {
+                        "type": "string",
+                        "description": "Result, decision, or follow-up from the interaction",
+                    },
+                    "person_names": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Names of people involved",
+                    },
+                    "tag_names": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Tags for this interaction (e.g. work, personal, follow-up)",
+                    },
+                    "occurred_at": {
+                        "type": "string",
+                        "description": "ISO 8601 datetime when it happened (omit for now)",
+                    },
+                },
+                "required": ["observation"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "log_meal",
+            "description": (
+                "Log a meal decision in Chef. Use for anything the user ate, cooked, or ordered."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "decision": {
+                        "type": "string",
+                        "enum": ["cook", "order", "eat_out"],
+                        "description": "How the meal was obtained",
+                    },
+                    "recipe_name": {
+                        "type": "string",
+                        "description": "Name of the dish or meal",
+                    },
+                    "cuisine": {
+                        "type": "string",
+                        "description": "Cuisine type (e.g. Italian, Pakistani, Japanese)",
+                    },
+                    "satisfaction": {
+                        "type": "integer",
+                        "description": "Satisfaction rating 1–5",
+                    },
+                },
+                "required": ["decision"],
+            },
         },
     },
 ]

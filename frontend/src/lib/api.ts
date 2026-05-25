@@ -50,6 +50,72 @@ export const MODELS = [
 
 export type ModelId = (typeof MODELS)[number]["id"];
 
+export interface ConfirmationItem {
+  tool: string;
+  success: boolean;
+}
+
+export async function* streamAgentChat(
+  messages: Message[],
+  model: ModelId,
+  siblingToken: string | null,
+  signal?: AbortSignal,
+  onToolCall?: (tool: string) => void,
+  onConfirmation?: (results: ConfirmationItem[]) => void,
+  diary?: boolean,
+): AsyncGenerator<string> {
+  const res = await fetch(apiUrl("/api/agent/chat"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages, model, sibling_token: siblingToken, diary: diary ?? false }),
+    signal,
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Request failed" }));
+    throw new Error(err.detail || `HTTP ${res.status}`);
+  }
+
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      const raw = line.slice(6).trim();
+      if (raw === "[DONE]") return;
+      try {
+        const parsed = JSON.parse(raw) as {
+          delta?: string;
+          error?: string;
+          status?: string;
+          tool?: string;
+          confirmation?: ConfirmationItem[];
+        };
+        if (parsed.error) throw new Error(parsed.error);
+        if (parsed.status === "calling_tool" && parsed.tool) {
+          onToolCall?.(parsed.tool);
+          continue;
+        }
+        if (parsed.confirmation !== undefined) {
+          onConfirmation?.(parsed.confirmation);
+          continue;
+        }
+        if (parsed.delta) yield parsed.delta;
+      } catch (e) {
+        if (e instanceof SyntaxError) continue;
+        throw e;
+      }
+    }
+  }
+}
+
 export async function* streamChat(
   messages: Message[],
   model: ModelId,

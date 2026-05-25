@@ -7,13 +7,16 @@ const withPWA = withPWAInit({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
   register: true,
-  fallbacks: { document: isGithubPages ? "/conduit/offline" : "/offline" },
-  ...(isGithubPages && { scope: "/conduit/", sw: "sw.js" }),
+  fallbacks: { document: "/offline" },
 });
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ["@shared/cortex"],
+  // Expose base path to client components (used by SWRegistrar)
+  env: {
+    NEXT_PUBLIC_BASE_PATH: isGithubPages ? "/conduit" : "",
+  },
   ...(isGithubPages && {
     output: "export",
     basePath: "/conduit",
@@ -34,4 +37,7 @@ const nextConfig: NextConfig = {
   }),
 };
 
-export default withPWA(nextConfig);
+// Skip the PWA wrapper entirely on GitHub Pages — the workbox precache
+// it generates uses /_next/... paths that break under the /conduit basePath.
+// A minimal sw.js is written by scripts/write-pages-sw.mjs instead.
+export default isGithubPages ? nextConfig : withPWA(nextConfig);

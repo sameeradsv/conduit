@@ -273,6 +273,7 @@ body {
   transition: border-color 0.1s, color 0.1s;
 }
 .theme-btn:hover { border-color: var(--fg-mute); color: var(--fg); }
+.theme-btn.active { border-color: var(--accent); color: var(--accent); }
 
 /* ── Login page ──────────────────────────────────────────────── */
 .login-shell {

@@ -62,16 +62,16 @@ export default function LoginPage() {
         {/* mode tabs */}
         <div className="login-tabs">
           <button
-            className={`login-tab${mode === "conduit" ? " active" : ""}`}
-            onClick={() => switchMode("conduit")}
-          >
-            conduit account
-          </button>
-          <button
             className={`login-tab${mode === "cortex" ? " active" : ""}`}
             onClick={() => switchMode("cortex")}
           >
             cortex account
+          </button>
+          <button
+            className={`login-tab${mode === "conduit" ? " active" : ""}`}
+            onClick={() => switchMode("conduit")}
+          >
+            conduit account
           </button>
         </div>
 

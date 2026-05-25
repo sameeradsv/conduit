@@ -6,9 +6,21 @@ import { CommandInput } from "./CommandInput";
 import { StatusBar, type AppStatus } from "./StatusBar";
 import { ModelPicker } from "./ModelPicker";
 import { ThemeToggle } from "./ThemeToggle";
-import { streamChat, saveSession, type Message, type ModelId, MODELS } from "@/lib/api";
+import { AgentToggle } from "./AgentToggle";
+import { DiaryToggle } from "./DiaryToggle";
+import {
+  streamChat,
+  streamAgentChat,
+  saveSession,
+  type Message,
+  type ModelId,
+  type ConfirmationItem,
+  MODELS,
+} from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import type { UIMessage } from "./MessageRow";
+
+type ChatMode = "chat" | "agent" | "diary";
 
 const DEFAULT_SYSTEM = "You are a helpful assistant. Be concise and direct.";
 
@@ -17,14 +29,49 @@ const HELP_TEXT = `conduit — available commands:
   /models            list available models
   /model <id>        switch model
   /system <text>     set system prompt
+  /chat              switch to direct chat mode (no tools)
+  /agent             toggle agent mode (live data from circuit/canopy/chef)
+  /diary             toggle diary mode (log entries silently, no response)
   /clear             clear chat history
   /logout            sign out`;
 
 const MODELS_TEXT =
   "available models:\n" + MODELS.map((m) => `  ${m.id}`).join("\n");
 
+const TOOL_APP: Record<string, string> = {
+  create_task: "circuit",
+  log_interaction: "canopy",
+  log_meal: "chef",
+};
+
+function formatConfirmation(results: ConfirmationItem[]): string {
+  if (results.length === 0)
+    return "~ nothing detected — no tasks, interactions, or meals found in that entry";
+  const counts: Record<string, { n: number; ok: boolean }> = {};
+  for (const r of results) {
+    if (!counts[r.tool]) counts[r.tool] = { n: 0, ok: true };
+    counts[r.tool].n++;
+    if (!r.success) counts[r.tool].ok = false;
+  }
+  return Object.entries(counts)
+    .map(([tool, { n, ok }]) => {
+      const app = (TOOL_APP[tool] ?? tool).padEnd(10);
+      return `${ok ? "✓" : "✗"}  ${app}${tool} × ${n}`;
+    })
+    .join("\n");
+}
+
 let idCounter = 0;
 function uid() { return `m${++idCounter}`; }
+
+function loadMode(): ChatMode {
+  if (typeof window === "undefined") return "chat";
+  const stored = localStorage.getItem("conduit-mode");
+  if (stored === "agent" || stored === "diary") return stored;
+  // migrate legacy conduit-agent flag
+  if (localStorage.getItem("conduit-agent") === "true") return "agent";
+  return "chat";
+}
 
 export function TerminalShell() {
   const { user, logout } = useAuth();
@@ -39,7 +86,13 @@ export function TerminalShell() {
   const [status, setStatus] = useState<AppStatus>("ready");
   const [tokenCount, setTokenCount] = useState(0);
   const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM);
+  const [chatMode, setChatMode] = useState<ChatMode>(loadMode);
   const abortRef = useRef<AbortController | null>(null);
+
+  const setMode = useCallback((mode: ChatMode) => {
+    setChatMode(mode);
+    localStorage.setItem("conduit-mode", mode);
+  }, []);
 
   const addMsg = useCallback((msg: Omit<UIMessage, "id">): string => {
     const id = uid();
@@ -65,6 +118,31 @@ export function TerminalShell() {
         case "/clear":
           setMessages([{ id: uid(), role: "system", content: "chat cleared." }]);
           setTokenCount(0);
+          return true;
+        case "/chat":
+          setMode("chat");
+          addSystem("chat mode — direct LLM, no tools.");
+          return true;
+        case "/agent":
+          if (chatMode === "agent") {
+            setMode("chat");
+            addSystem("agent mode off.");
+          } else {
+            setMode("agent");
+            addSystem("agent mode on — circuit, canopy, and chef are available.");
+          }
+          return true;
+        case "/diary":
+          if (chatMode === "diary") {
+            setMode("chat");
+            addSystem("diary mode off.");
+          } else {
+            setMode("diary");
+            addSystem(
+              "diary mode on — write anything and it will be routed silently.\n" +
+              "tasks → circuit · interactions → canopy · meals → chef",
+            );
+          }
           return true;
         case "/model": {
           const found = MODELS.find((m) => m.id === rest[0]);
@@ -94,7 +172,7 @@ export function TerminalShell() {
           return false;
       }
     },
-    [addMsg, addSystem, logout],
+    [addMsg, addSystem, logout, chatMode, setMode],
   );
 
   const handleSend = useCallback(
@@ -115,7 +193,6 @@ export function TerminalShell() {
       addMsg({ role: "user", content: trimmed });
       setStatus("streaming");
 
-      // Build API message history (skip system UI messages)
       const history: Message[] = [
         { role: "system", content: systemPrompt },
         ...messages
@@ -124,16 +201,59 @@ export function TerminalShell() {
         { role: "user", content: trimmed },
       ];
 
-      const aiId = addMsg({ role: "assistant", content: "", streaming: true });
-      let fullContent = "";
+      const siblingToken =
+        typeof window !== "undefined"
+          ? localStorage.getItem("conduit_auth_token")
+          : null;
+
       abortRef.current = new AbortController();
 
+      // ── Diary mode: silent write routing, no AI response ─────────
+      if (chatMode === "diary") {
+        try {
+          for await (const _ of streamAgentChat(
+            history,
+            model,
+            siblingToken,
+            abortRef.current.signal,
+            undefined,
+            (results) => addSystem(formatConfirmation(results)),
+            true,
+          )) { /* no deltas in diary mode */ }
+          setStatus("ready");
+        } catch (err: unknown) {
+          const isAbort = err instanceof Error && err.name === "AbortError";
+          if (!isAbort) {
+            addMsg({
+              role: "system",
+              content: `! ${err instanceof Error ? err.message : "unknown error"}`,
+            });
+            setStatus("error");
+            setTimeout(() => setStatus("ready"), 3000);
+          } else {
+            setStatus("ready");
+          }
+        }
+        return;
+      }
+
+      // ── Agent / chat mode: streaming AI response ──────────────────
+      const aiId = addMsg({ role: "assistant", content: "", streaming: true });
+      let fullContent = "";
+
+      const chatStream =
+        chatMode === "agent"
+          ? streamAgentChat(
+              history,
+              model,
+              siblingToken,
+              abortRef.current.signal,
+              (tool) => addSystem(`~ querying ${tool.replace(/_/g, " ")}...`),
+            )
+          : streamChat(history, model, abortRef.current.signal);
+
       try {
-        for await (const chunk of streamChat(
-          history,
-          model,
-          abortRef.current.signal,
-        )) {
+        for await (const chunk of chatStream) {
           fullContent += chunk;
           setMessages((prev) =>
             prev.map((m) =>
@@ -146,7 +266,6 @@ export function TerminalShell() {
           prev.map((m) => (m.id === aiId ? { ...m, streaming: false } : m)),
         );
         setStatus("ready");
-        // Persist completed exchange — best-effort, never blocks the UI
         saveSession(
           [
             ...history.filter((m) => m.role !== "system"),
@@ -155,8 +274,7 @@ export function TerminalShell() {
           model,
         );
       } catch (err: unknown) {
-        const isAbort =
-          err instanceof Error && err.name === "AbortError";
+        const isAbort = err instanceof Error && err.name === "AbortError";
         setMessages((prev) =>
           prev.map((m) =>
             m.id === aiId
@@ -174,7 +292,7 @@ export function TerminalShell() {
         if (!isAbort) setTimeout(() => setStatus("ready"), 3000);
       }
     },
-    [messages, model, systemPrompt, addMsg, handleSlashCommand],
+    [messages, model, systemPrompt, chatMode, addMsg, addSystem, handleSlashCommand],
   );
 
   const handleAbort = useCallback(() => {
@@ -190,6 +308,14 @@ export function TerminalShell() {
         <span className="topbar-sep">·</span>
         <ModelPicker value={model} onChange={setModel} />
         <span className="topbar-grow" />
+        <AgentToggle
+          active={chatMode === "agent"}
+          onToggle={() => setMode(chatMode === "agent" ? "chat" : "agent")}
+        />
+        <DiaryToggle
+          active={chatMode === "diary"}
+          onToggle={() => setMode(chatMode === "diary" ? "chat" : "diary")}
+        />
         <ThemeToggle />
         {user && (
           <button className="theme-btn" onClick={logout} title="sign out">
@@ -205,6 +331,11 @@ export function TerminalShell() {
         onAbort={handleAbort}
         disabled={status === "streaming"}
         streaming={status === "streaming"}
+        placeholder={
+          chatMode === "diary"
+            ? "write anything — tasks, interactions, meals..."
+            : undefined
+        }
       />
 
       <StatusBar model={currentModel} tokenCount={tokenCount} status={status} />
