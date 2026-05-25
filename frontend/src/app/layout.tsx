@@ -17,6 +17,7 @@ export const metadata: Metadata = {
   applicationName: APP_NAME,
   title: { default: APP_NAME, template: `%s | ${APP_NAME}` },
   description: "Terminal-style multi-model AI chat",
+  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

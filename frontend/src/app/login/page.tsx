@@ -10,7 +10,7 @@ export default function LoginPage() {
   const { login, loginWithCortex, register, isAuthenticated, loading } =
     useAuth();
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>("conduit");
+  const [mode, setMode] = useState<Mode>("cortex");
   const [username, setUsername] = useState("");
   const [secret, setSecret] = useState("");
   const [error, setError] = useState("");
