@@ -1,3 +1,6 @@
+const _API = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
+const apiUrl = (path: string) => (_API ? `${_API}${path}` : path);
+
 export type Role = "user" | "assistant" | "system";
 
 export interface SavedSession {
@@ -13,7 +16,7 @@ export async function saveSession(
   model: ModelId,
 ): Promise<void> {
   try {
-    await fetch("/api/history", {
+    await fetch(apiUrl("/api/history"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ messages, model }),
@@ -25,7 +28,7 @@ export async function saveSession(
 
 export async function listSessions(): Promise<SavedSession[]> {
   try {
-    const res = await fetch("/api/history");
+    const res = await fetch(apiUrl("/api/history"));
     if (!res.ok) return [];
     return res.json();
   } catch {
@@ -52,7 +55,7 @@ export async function* streamChat(
   model: ModelId,
   signal?: AbortSignal,
 ): AsyncGenerator<string> {
-  const res = await fetch("/api/chat", {
+  const res = await fetch(apiUrl("/api/chat"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ messages, model }),

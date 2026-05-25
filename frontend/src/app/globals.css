@@ -359,6 +359,27 @@ body {
 
 .login-error { color: var(--danger); font-size: 11px; margin-top: 10px; }
 
+.login-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 18px;
+}
+.login-tab {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--fg-faint);
+  font-family: inherit;
+  font-size: 11px;
+  padding: 5px 8px;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  transition: color 0.15s, border-color 0.15s;
+}
+.login-tab:hover { color: var(--fg); border-color: var(--fg-dim); }
+.login-tab.active { color: var(--accent); border-color: var(--accent); }
+.login-hint { color: var(--fg-faint); font-size: 10px; margin-top: 10px; text-align: center; }
+
 /* ── Offline page ────────────────────────────────────────────── */
 .offline-shell {
   display: flex;

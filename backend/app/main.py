@@ -1,6 +1,7 @@
 from app.config import settings
 from app.database import Base, engine, _migrate_postgres
 from app.routers import chat
+from app.routers.agent import router as agent_router
 from app.routers.auth import router as auth_router
 from app.routers.history import router as history_router
 
@@ -23,6 +24,7 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(chat.router)
+app.include_router(agent_router)
 app.include_router(history_router)
 
 

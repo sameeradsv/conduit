@@ -11,6 +11,8 @@ import { useRouter, usePathname } from "next/navigation";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:8000";
+const CORTEX_BASE =
+  process.env.NEXT_PUBLIC_CORTEX_URL?.replace(/\/$/, "") ?? "";
 const TOKEN_KEY = "conduit_auth_token";
 
 async function callAuth(
@@ -35,12 +37,13 @@ interface AuthContextValue {
   loading: boolean;
   isAuthenticated: boolean;
   login: (username: string, passcode: string) => Promise<void>;
+  loginWithCortex: (username: string, password: string) => Promise<void>;
   register: (username: string, passcode: string) => Promise<void>;
   logout: () => Promise<void>;
   refetch: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextValue>({} as AuthContextValue);
+const AuthContext = createContext<AuthContextValue>(null as unknown as AuthContextValue);
 
 function AuthBridge({ children }: { children: React.ReactNode }) {
   const { user, loading, logout, refetch } = useCortexAuth();
@@ -70,6 +73,25 @@ function AuthBridge({ children }: { children: React.ReactNode }) {
     [refetch],
   );
 
+  const loginWithCortex = useCallback(
+    async (username: string, password: string) => {
+      if (!CORTEX_BASE) throw new Error("Cortex URL not configured");
+      const res = await fetch(`${CORTEX_BASE}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: username.toLowerCase(), password }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: "Request failed" }));
+        throw new Error(err.detail || "Cortex login failed");
+      }
+      const data = await res.json();
+      setAuthToken(TOKEN_KEY, data.token);
+      await refetch();
+    },
+    [refetch],
+  );
+
   return (
     <AuthContext.Provider
       value={{
@@ -77,6 +99,7 @@ function AuthBridge({ children }: { children: React.ReactNode }) {
         loading,
         isAuthenticated: !!user,
         login,
+        loginWithCortex,
         register,
         logout,
         refetch,

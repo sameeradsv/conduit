@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     groq_api_key: str = ""
     # Optional: URL of the shared Cortex Auth Server e.g. "https://cortex-auth.onrender.com"
     cortex_auth_url: str = ""
+    # Sibling app base URLs (no trailing slash)
+    circuit_url: str = "http://localhost:8001"
+    canopy_url: str = "http://localhost:8002"
+    chef_url: str = "http://localhost:8003"
 
     @property
     def cors_origins_list(self) -> list[str]:
