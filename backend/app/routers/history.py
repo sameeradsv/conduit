@@ -3,18 +3,18 @@
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.auth_dep import optional_user_id
 from app.database import get_db
-from app.models import ChatMessageModel, ChatSession
+from app.deps.auth import optional_auth_user
+from app.models import ChatMessageModel, ChatSession, User
 
 router = APIRouter(prefix="/api/history", tags=["history"])
 
 
-# ── Request / response schemas ────────────────────────────────────────────────
+# ── Schemas ───────────────────────────────────────────────────────────────────
 
 class MessageIn(BaseModel):
     role: str
@@ -59,18 +59,18 @@ def _derive_title(messages: list[MessageIn]) -> str:
 def save_session(
     body: SessionIn,
     db: Session = Depends(get_db),
-    user_id: Optional[int] = Depends(optional_user_id),
+    user: Optional[User] = Depends(optional_auth_user),
 ):
     session = ChatSession(
-        cortex_user_id=user_id,
+        user_id=user.id if user else None,
         model=body.model,
         title=_derive_title(body.messages),
     )
     db.add(session)
-    db.flush()  # get session.id before adding messages
+    db.flush()
 
     for m in body.messages:
-        if m.role in ("user", "assistant"):  # skip system messages
+        if m.role in ("user", "assistant"):
             db.add(ChatMessageModel(
                 session_id=session.id,
                 role=m.role,
@@ -86,16 +86,13 @@ def save_session(
 def list_sessions(
     limit: int = 20,
     db: Session = Depends(get_db),
-    user_id: Optional[int] = Depends(optional_user_id),
+    user: Optional[User] = Depends(optional_auth_user),
 ):
-    query = db.query(ChatSession)
-    if user_id is not None:
-        query = query.filter(ChatSession.cortex_user_id == user_id)
-    else:
-        # Guest: return nothing (no user to scope to)
+    if user is None:
         return []
     return (
-        query
+        db.query(ChatSession)
+        .filter(ChatSession.user_id == user.id)
         .order_by(ChatSession.created_at.desc())
         .limit(limit)
         .all()
@@ -106,15 +103,12 @@ def list_sessions(
 def get_session(
     session_id: int,
     db: Session = Depends(get_db),
-    user_id: Optional[int] = Depends(optional_user_id),
+    user: Optional[User] = Depends(optional_auth_user),
 ):
     session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
     if not session:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Session not found")
-    # Only return the session if it belongs to this user (or is a guest session)
-    if user_id is not None and session.cortex_user_id != user_id:
-        from fastapi import HTTPException
+    if user is not None and session.user_id != user.id:
         raise HTTPException(status_code=403, detail="Forbidden")
     return session
 
@@ -123,13 +117,12 @@ def get_session(
 def delete_session(
     session_id: int,
     db: Session = Depends(get_db),
-    user_id: Optional[int] = Depends(optional_user_id),
+    user: Optional[User] = Depends(optional_auth_user),
 ):
     session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
     if not session:
         return
-    if user_id is not None and session.cortex_user_id != user_id:
-        from fastapi import HTTPException
+    if user is not None and session.user_id != user.id:
         raise HTTPException(status_code=403, detail="Forbidden")
     db.delete(session)
     db.commit()

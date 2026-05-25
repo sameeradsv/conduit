@@ -35,12 +35,27 @@ def _migrate_postgres() -> None:
         return
     with engine.connect() as conn:
         inspector = inspect(engine)
-        if "chat_sessions" not in inspector.get_table_names():
-            return
-        existing = {c["name"] for c in inspector.get_columns("chat_sessions")}
-        if "title" not in existing:
-            conn.execute(text("ALTER TABLE chat_sessions ADD COLUMN title VARCHAR(200) DEFAULT ''"))
-            conn.commit()
+        tables = inspector.get_table_names()
+
+        if "users" in tables:
+            existing = {c["name"] for c in inspector.get_columns("users")}
+            if "cortex_user_id" not in existing:
+                conn.execute(text("ALTER TABLE users ADD COLUMN cortex_user_id INTEGER"))
+                conn.execute(text(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_cortex_user_id "
+                    "ON users (cortex_user_id) WHERE cortex_user_id IS NOT NULL"
+                ))
+                conn.commit()
+
+        if "chat_sessions" in tables:
+            existing = {c["name"] for c in inspector.get_columns("chat_sessions")}
+            if "title" not in existing:
+                conn.execute(text("ALTER TABLE chat_sessions ADD COLUMN title VARCHAR(200) DEFAULT ''"))
+                conn.commit()
+            # Migrate old cortex_user_id column to user_id if present
+            if "cortex_user_id" in existing and "user_id" not in existing:
+                conn.execute(text("ALTER TABLE chat_sessions ADD COLUMN user_id INTEGER REFERENCES users(id)"))
+                conn.commit()
 
 
 def get_db():
