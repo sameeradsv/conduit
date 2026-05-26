@@ -100,6 +100,26 @@ READ_TOOLS = [
             "parameters": {"type": "object", "properties": {}, "required": []},
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_food_log",
+            "description": (
+                "Fetch the user's food/meal log from Chef for a given day. "
+                "Returns what was cooked, ordered, or eaten with decision type, dish name, and cuisine."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "date": {
+                        "type": "string",
+                        "description": "Date to fetch: 'today' (default) or 'YYYY-MM-DD'",
+                    }
+                },
+                "required": [],
+            },
+        },
+    },
 ]
 
 WRITE_TOOLS = [
@@ -214,3 +234,28 @@ WRITE_TOOLS = [
         },
     },
 ]
+
+# Scope-filtered tool sets for embedded per-app chat
+SCOPE_TOOLS: dict[str, list] = {
+    "circuit": [
+        t for t in READ_TOOLS
+        if t["function"]["name"] in ("get_my_tasks", "get_task_summary")
+    ] + [
+        t for t in WRITE_TOOLS
+        if t["function"]["name"] == "create_task"
+    ],
+    "canopy": [
+        t for t in READ_TOOLS
+        if t["function"]["name"] in ("get_people", "get_recent_interactions")
+    ] + [
+        t for t in WRITE_TOOLS
+        if t["function"]["name"] == "log_interaction"
+    ],
+    "chef": [
+        t for t in READ_TOOLS
+        if t["function"]["name"] in ("get_meal_recommendation", "get_cook_vs_order", "get_food_log")
+    ] + [
+        t for t in WRITE_TOOLS
+        if t["function"]["name"] == "log_meal"
+    ],
+}

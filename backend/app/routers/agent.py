@@ -20,6 +20,7 @@ async def agent_chat(req: AgentChatRequest) -> StreamingResponse:
                 sibling_token=req.sibling_token,
                 max_tokens=req.max_tokens,
                 temperature=req.temperature,
+                scope=req.scope,
             ):
                 yield f"data: {json.dumps(event)}\n\n"
         except Exception as exc:

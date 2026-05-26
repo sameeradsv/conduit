@@ -27,3 +27,4 @@ class ModelsResponse(BaseModel):
 class AgentChatRequest(ChatRequest):
     sibling_token: Optional[str] = None
     diary: bool = False
+    scope: Optional[str] = None  # "circuit" | "canopy" | "chef" | None (all tools)

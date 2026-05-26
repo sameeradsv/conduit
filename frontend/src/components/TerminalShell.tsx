@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import { MessageFeed } from "./MessageFeed";
 import { CommandInput } from "./CommandInput";
+import { DiaryCompose } from "./DiaryCompose";
 import { StatusBar, type AppStatus } from "./StatusBar";
 import { ModelPicker } from "./ModelPicker";
 import { ThemeToggle } from "./ThemeToggle";
@@ -32,6 +33,7 @@ const HELP_TEXT = `conduit — available commands:
   /chat              switch to direct chat mode (no tools)
   /agent             toggle agent mode (live data from circuit/canopy/chef)
   /diary             toggle diary mode (log entries silently, no response)
+  /digest            fetch a daily briefing from all apps
   /clear             clear chat history
   /logout            sign out`;
 
@@ -180,6 +182,73 @@ export function TerminalShell() {
       const trimmed = text.trim();
       if (!trimmed) return;
 
+      // /digest: must be checked before the general slash router
+      if (trimmed === "/digest") {
+        const digestPrompt =
+          "Daily digest — use your tools to fetch everything and give me a concise briefing: " +
+          "my tasks and task summary from Circuit, recent interactions from Canopy, " +
+          "today's food log and a meal recommendation from Chef.";
+
+        addSystem("~ fetching daily digest...");
+        setStatus("streaming");
+
+        const digestHistory: Message[] = [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: digestPrompt },
+        ];
+
+        const digestId = addMsg({ role: "assistant", content: "", streaming: true });
+        let digestContent = "";
+        abortRef.current = new AbortController();
+
+        const digestToken =
+          typeof window !== "undefined"
+            ? localStorage.getItem("conduit_auth_token")
+            : null;
+
+        try {
+          for await (const chunk of streamAgentChat(
+            digestHistory,
+            model,
+            digestToken,
+            abortRef.current.signal,
+            (tool) => addSystem(`~ querying ${tool.replace(/_/g, " ")}...`),
+          )) {
+            digestContent += chunk;
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === digestId ? { ...m, content: digestContent } : m,
+              ),
+            );
+            setTokenCount((n) => n + 1);
+          }
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === digestId ? { ...m, streaming: false } : m,
+            ),
+          );
+          setStatus("ready");
+        } catch (err: unknown) {
+          const isAbort = err instanceof Error && err.name === "AbortError";
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === digestId
+                ? {
+                    ...m,
+                    content: isAbort
+                      ? digestContent || "(cancelled)"
+                      : `! ${err instanceof Error ? err.message : "unknown error"}`,
+                    streaming: false,
+                  }
+                : m,
+            ),
+          );
+          setStatus(isAbort ? "ready" : "error");
+          if (!isAbort) setTimeout(() => setStatus("ready"), 3000);
+        }
+        return;
+      }
+
       if (trimmed.startsWith("/")) {
         if (!handleSlashCommand(trimmed)) {
           addMsg({
@@ -326,17 +395,21 @@ export function TerminalShell() {
 
       <MessageFeed messages={messages} />
 
-      <CommandInput
-        onSend={handleSend}
-        onAbort={handleAbort}
-        disabled={status === "streaming"}
-        streaming={status === "streaming"}
-        placeholder={
-          chatMode === "diary"
-            ? "write anything — tasks, interactions, meals..."
-            : undefined
-        }
-      />
+      {chatMode === "diary" ? (
+        <DiaryCompose
+          onSend={handleSend}
+          onAbort={handleAbort}
+          disabled={status === "streaming"}
+          streaming={status === "streaming"}
+        />
+      ) : (
+        <CommandInput
+          onSend={handleSend}
+          onAbort={handleAbort}
+          disabled={status === "streaming"}
+          streaming={status === "streaming"}
+        />
+      )}
 
       <StatusBar model={currentModel} tokenCount={tokenCount} status={status} />
     </div>

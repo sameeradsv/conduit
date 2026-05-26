@@ -5,7 +5,7 @@ from typing import AsyncIterator, Optional
 from groq import AsyncGroq
 
 from app.schemas import ChatMessage
-from app.tools.definitions import READ_TOOLS, WRITE_TOOLS
+from app.tools.definitions import READ_TOOLS, WRITE_TOOLS, SCOPE_TOOLS
 from app.tools.executor import execute_tool
 
 _AGENT_SYSTEM = (
@@ -29,6 +29,24 @@ _DIARY_SYSTEM = (
     "- Meals, food, what was eaten/cooked/ordered → log_meal (one call per meal)\n"
     "Call multiple tools when multiple items are present. Extract all available detail."
 )
+
+_SCOPE_SYSTEMS: dict[str, str] = {
+    "circuit": (
+        "You are a terminal assistant embedded in Circuit, a task management app. "
+        "Use your tools to help the user check tasks, understand priorities, and add new tasks. "
+        "Be concise and terminal-appropriate. If Circuit is unreachable, say so clearly."
+    ),
+    "canopy": (
+        "You are a terminal assistant embedded in Canopy, a relationship tracking app. "
+        "Use your tools to help the user recall people, review interaction history, and log new interactions. "
+        "Be concise and terminal-appropriate."
+    ),
+    "chef": (
+        "You are a terminal assistant embedded in Chef, a kitchen decision app. "
+        "Use your tools to give meal recommendations, help decide cook vs order, and log meals. "
+        "Be concise and terminal-appropriate."
+    ),
+}
 
 _TOOL_CALL_MODELS = {
     "llama-3.3-70b-versatile",
@@ -59,10 +77,18 @@ async def stream_agent_chat(
     sibling_token: Optional[str] = None,
     max_tokens: int = 1024,
     temperature: float = 0.7,
+    scope: Optional[str] = None,
 ) -> AsyncIterator[dict]:
     client = _client()
-    system = _DIARY_SYSTEM if diary else _AGENT_SYSTEM
-    tools = WRITE_TOOLS if diary else READ_TOOLS
+    if scope and scope in _SCOPE_SYSTEMS:
+        system = _SCOPE_SYSTEMS[scope]
+        tools = SCOPE_TOOLS.get(scope, READ_TOOLS)
+    elif diary:
+        system = _DIARY_SYSTEM
+        tools = WRITE_TOOLS
+    else:
+        system = _AGENT_SYSTEM
+        tools = READ_TOOLS
 
     groq_messages = _build_messages(messages, system)
 

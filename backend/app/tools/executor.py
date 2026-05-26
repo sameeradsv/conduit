@@ -82,6 +82,27 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
                 r.raise_for_status()
                 return json.dumps(r.json())
 
+            elif name == "get_food_log":
+                date_param = args.get("date", "today")
+                r = await client.get(
+                    f"{settings.chef_url}/history",
+                    params={"date": date_param, "limit": 10},
+                    headers=h,
+                )
+                r.raise_for_status()
+                entries = r.json()
+                trimmed = [
+                    {
+                        "decision": e.get("decision"),
+                        "recipe_name": e.get("recipe_name"),
+                        "cuisine": e.get("cuisine"),
+                        "satisfaction": e.get("satisfaction"),
+                        "timestamp": e.get("timestamp"),
+                    }
+                    for e in entries
+                ]
+                return json.dumps(trimmed)
+
             # ── Write tools ───────────────────────────────────────────
             elif name == "create_task":
                 payload: dict = {"text": args["text"]}
@@ -106,6 +127,14 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
                         people = r.json()
                         if people:
                             participant_ids.append(people[0]["id"])
+                        else:
+                            cr = await client.post(
+                                f"{settings.canopy_url}/api/people",
+                                json={"name": person_name},
+                                headers=h,
+                            )
+                            if cr.status_code in (200, 201):
+                                participant_ids.append(cr.json()["id"])
 
                 payload = {
                     "observation": args["observation"],
