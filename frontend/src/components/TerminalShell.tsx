@@ -7,8 +7,6 @@ import { DiaryCompose } from "./DiaryCompose";
 import { StatusBar, type AppStatus } from "./StatusBar";
 import { ModelPicker } from "./ModelPicker";
 import { ThemeToggle } from "./ThemeToggle";
-import { AgentToggle } from "./AgentToggle";
-import { DiaryToggle } from "./DiaryToggle";
 import {
   streamChat,
   streamAgentChat,
@@ -377,20 +375,35 @@ export function TerminalShell() {
         <span className="topbar-sep">·</span>
         <ModelPicker value={model} onChange={setModel} />
         <span className="topbar-grow" />
-        <AgentToggle
-          active={chatMode === "agent"}
-          onToggle={() => setMode(chatMode === "agent" ? "chat" : "agent")}
-        />
-        <DiaryToggle
-          active={chatMode === "diary"}
-          onToggle={() => setMode(chatMode === "diary" ? "chat" : "diary")}
-        />
         <ThemeToggle />
         {user && (
           <button className="theme-btn" onClick={logout} title="sign out">
             {user.username} ↩
           </button>
         )}
+      </div>
+
+      <div className="mode-bar" role="tablist" aria-label="Chat mode">
+        {(["chat", "agent", "diary"] as const).map((m) => (
+          <button
+            key={m}
+            role="tab"
+            aria-selected={chatMode === m}
+            className={`mode-tab${chatMode === m ? " active" : ""}`}
+            onClick={() => {
+              if (chatMode === m) return;
+              setMode(m);
+              const labels: Record<ChatMode, string> = {
+                chat:  "chat mode — direct LLM, no tools.",
+                agent: "agent mode on — circuit, canopy, and chef are available.",
+                diary: "diary mode on — write anything and it will be routed silently.\ntasks → circuit · interactions → canopy · meals → chef",
+              };
+              addSystem(labels[m]);
+            }}
+          >
+            {m}
+          </button>
+        ))}
       </div>
 
       <MessageFeed messages={messages} />

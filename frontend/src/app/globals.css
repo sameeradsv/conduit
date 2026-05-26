@@ -90,12 +90,47 @@ body {
 .topbar {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   padding: 10px 16px;
+  padding-top: calc(10px + env(safe-area-inset-top, 0px));
+  padding-left: calc(16px + env(safe-area-inset-left, 0px));
+  padding-right: calc(16px + env(safe-area-inset-right, 0px));
   border-bottom: 1px solid var(--line);
   background: var(--bg-alt);
   flex-shrink: 0;
   min-height: 44px;
+  overflow: hidden;
+}
+
+/* ── Mode bar ────────────────────────────────────────────────── */
+.mode-bar {
+  display: flex;
+  background: var(--bg-alt);
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.mode-tab {
+  flex: 1;
+  appearance: none;
+  border: none;
+  border-right: 1px solid var(--line-soft);
+  background: transparent;
+  color: var(--fg-faint);
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  padding: 9px 8px;
+  cursor: pointer;
+  text-align: center;
+  transition: color 0.1s, background 0.1s;
+  min-height: 36px;
+}
+.mode-tab:last-child { border-right: none; }
+.mode-tab:hover { color: var(--fg); }
+.mode-tab.active {
+  color: var(--accent);
+  background: var(--accent-soft);
 }
 
 .brand {
@@ -175,6 +210,8 @@ body {
   border-top: 1px solid var(--line);
   background: var(--bg-alt);
   padding: 10px 16px;
+  padding-left: calc(16px + env(safe-area-inset-left, 0px));
+  padding-right: calc(16px + env(safe-area-inset-right, 0px));
   display: flex;
   align-items: flex-start;
   gap: 10px;
@@ -231,6 +268,9 @@ body {
   align-items: center;
   gap: 16px;
   padding: 4px 16px;
+  padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+  padding-left: calc(16px + env(safe-area-inset-left, 0px));
+  padding-right: calc(16px + env(safe-area-inset-right, 0px));
   border-top: 1px solid var(--line-soft);
   background: var(--bg);
   font-size: 11px;
@@ -459,4 +499,20 @@ body {
 @keyframes blink {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0; }
+}
+
+/* ── Mobile tweaks ───────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .model-select { max-width: 110px; }
+
+  .diary-field {
+    min-height: 80px;
+    max-height: 160px;
+  }
+
+  /* Larger tap targets for mode tabs on mobile */
+  .mode-tab {
+    padding: 11px 8px;
+    font-size: 12px;
+  }
 }
