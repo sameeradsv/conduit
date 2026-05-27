@@ -19,6 +19,12 @@ frontend/public/fallback-*.js.map
 # Build output
 frontend/.next/
 
+# TypeScript incremental build cache
+frontend/tsconfig.tsbuildinfo
+
+# Design preview assets (not shipped)
+frontend/public/icons/icon-amber-preview.svg
+
 # Python
 __pycache__/
 *.pyc
