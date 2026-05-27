@@ -4,6 +4,7 @@ from app.routers import chat
 from app.routers.agent import router as agent_router
 from app.routers.auth import router as auth_router
 from app.routers.history import router as history_router
+from app.routers.webauthn import router as webauthn_router
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -26,6 +27,7 @@ app.include_router(auth_router)
 app.include_router(chat.router)
 app.include_router(agent_router)
 app.include_router(history_router)
+app.include_router(webauthn_router)
 
 
 @app.on_event("startup")

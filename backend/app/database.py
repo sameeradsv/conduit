@@ -57,6 +57,32 @@ def _migrate_postgres() -> None:
                 conn.execute(text("ALTER TABLE chat_sessions ADD COLUMN user_id INTEGER REFERENCES users(id)"))
                 conn.commit()
 
+        # WebAuthn tables
+        if "webauthn_credentials" not in tables:
+            conn.execute(text(
+                "CREATE TABLE webauthn_credentials ("
+                "credential_id TEXT PRIMARY KEY, "
+                "public_key TEXT NOT NULL, "
+                "sign_count INTEGER DEFAULT 0, "
+                "user_id TEXT NOT NULL, "
+                "created_at TIMESTAMP DEFAULT NOW()"
+                ")"
+            ))
+            conn.execute(text("CREATE INDEX ix_webauthn_cred_user ON webauthn_credentials (user_id)"))
+            conn.commit()
+
+        if "webauthn_challenges" not in tables:
+            conn.execute(text(
+                "CREATE TABLE webauthn_challenges ("
+                "id VARCHAR(64) PRIMARY KEY, "
+                "challenge VARCHAR(128) NOT NULL, "
+                "user_id TEXT, "
+                "expires_at TIMESTAMP NOT NULL, "
+                "created_at TIMESTAMP DEFAULT NOW()"
+                ")"
+            ))
+            conn.commit()
+
 
 def get_db():
     db = SessionLocal()

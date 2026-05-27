@@ -7,3 +7,4 @@ pydantic-settings
 httpx
 sqlalchemy>=2.0
 psycopg2-binary
+webauthn>=2.0.0

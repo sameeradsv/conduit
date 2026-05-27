@@ -6,6 +6,7 @@ import { CommandInput } from "./CommandInput";
 import { DiaryCompose } from "./DiaryCompose";
 import { StatusBar, type AppStatus } from "./StatusBar";
 import { ModelPicker } from "./ModelPicker";
+import { PasskeyBanner } from "./PasskeyBanner";
 import {
   streamChat,
   streamAgentChat,
@@ -433,6 +434,7 @@ export function TerminalShell() {
         ))}
         <div className="filler" />
       </div>
+      <PasskeyBanner />
 
       {/* feed — hidden in diary mode via CSS */}
       <MessageFeed messages={messages} />

@@ -3,11 +3,13 @@
 import { useState, useCallback, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
+import { setAuthToken } from "@shared/cortex";
+import { usePasskey } from "@/hooks/usePasskey";
 
 type Mode = "conduit" | "cortex";
 
 export default function LoginPage() {
-  const { login, loginWithCortex, register, isAuthenticated, loading } =
+  const { login, loginWithCortex, register, isAuthenticated, loading, refetch } =
     useAuth();
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("cortex");
@@ -15,6 +17,8 @@ export default function LoginPage() {
   const [secret, setSecret] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const { supported, loginWithPasskey } = usePasskey();
+  const [passkeyBusy, setPasskeyBusy] = useState(false);
 
   useEffect(() => {
     if (!loading && isAuthenticated) router.push("/");
@@ -47,6 +51,21 @@ export default function LoginPage() {
     },
     [username, secret, mode, login, loginWithCortex, register, router],
   );
+
+  const handlePasskeyLogin = useCallback(async () => {
+    setError("");
+    setPasskeyBusy(true);
+    try {
+      const data = await loginWithPasskey();
+      setAuthToken("conduit_auth_token", data.token);
+      await refetch();
+      router.push("/");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Biometric login failed");
+    } finally {
+      setPasskeyBusy(false);
+    }
+  }, [loginWithPasskey, refetch, router]);
 
   const onKey = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") handle("login");
@@ -127,6 +146,17 @@ export default function LoginPage() {
 
         {mode === "cortex" && (
           <p className="login-hint">sign in with your shared cortex account</p>
+        )}
+
+        {supported && (
+          <button
+            className="secondary-btn"
+            onClick={handlePasskeyLogin}
+            disabled={passkeyBusy || busy}
+            style={{ marginTop: 8 }}
+          >
+            {passkeyBusy ? "…" : "◎ sign in with biometrics"}
+          </button>
         )}
       </div>
     </div>
