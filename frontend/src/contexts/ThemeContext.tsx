@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 
-export type Theme = "phosphor" | "terminal";
+export type Theme = "phosphor";
 
 const ThemeContext = createContext<{
   theme: Theme;

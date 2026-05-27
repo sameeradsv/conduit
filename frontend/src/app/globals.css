@@ -25,28 +25,6 @@
   color-scheme: dark;
 }
 
-/* ── Design tokens — terminal (light printed-log) ─────────────── */
-[data-theme="terminal"] {
-  --bg:        #f4ecd8;
-  --bg-1:      #efe5c4;
-  --bg-2:      #e7dab1;
-  --ink:       #1a4d2e;
-  --ink-soft:  #2d6342;
-  --ink-bold:  #0d3a20;
-  --dim:       #7a7150;
-  --dim-2:     #b3a878;
-  --rule:      #c9b88a;
-  --user:      #0d3a20;
-  --ai:        #1a4d2e;
-  --sys:       #6b6552;
-  --err:       #9a3a3a;
-  --warn:      #a14d1c;
-  --accent-2:  #2d5a8a;
-  --glow:      none;
-  --selection: rgba(26, 77, 46, 0.18);
-  color-scheme: light;
-}
-
 /* ── Type scale + spacing ────────────────────────────────────── */
 :root {
   --fs-xs:  10px;
@@ -58,7 +36,7 @@
   --lh:     1.45;
   --pad-x:  18px;
   --font:   var(--font-jetbrains, "JetBrains Mono"), ui-monospace, SFMono-Regular, Menlo, monospace;
-  --hand:   var(--font-caveat, "Caveat"), cursive;
+  --hand:   var(--font-dancing, "Dancing Script"), cursive;
   --type:   var(--font-special-elite, "Special Elite"), "Courier New", monospace;
 }
 
@@ -263,7 +241,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .line.ai    .glyph { color: var(--ai); }
 .line.ai    .body  { color: var(--ink); }
 .line.sys   .glyph { color: var(--sys); }
-.line.sys   .body  { color: var(--sys); font-style: italic; }
+.line.sys   .body  { color: var(--sys); }
 .line.error .glyph { color: var(--err); }
 .line.error .body  { color: var(--err); }
 
