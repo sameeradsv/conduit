@@ -20,7 +20,6 @@ export function CommandInput({ onSend, onAbort, disabled, streaming, placeholder
     textareaRef.current?.focus();
   }, []);
 
-  // Auto-resize textarea
   useEffect(() => {
     const ta = textareaRef.current;
     if (!ta) return;
@@ -67,34 +66,40 @@ export function CommandInput({ onSend, onAbort, disabled, streaming, placeholder
   );
 
   return (
-    <div className="input-area">
-      <span className="input-prefix">{streaming ? "~" : ">"}</span>
-      <textarea
-        ref={textareaRef}
-        className="input-field"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder={streaming ? "streaming…" : (placeholder ?? "type a message or /help")}
-        rows={1}
-        spellCheck={false}
-        autoComplete="off"
-        autoCorrect="off"
-        disabled={false}
-      />
-      {streaming ? (
-        <button className="send-btn" onClick={onAbort}>
-          [stop]
-        </button>
-      ) : (
-        <button
-          className="send-btn"
-          onClick={submit}
-          disabled={!value.trim() || disabled}
-        >
-          [↵]
-        </button>
-      )}
+    <div className="composer">
+      <div className="input-row">
+        <span className="prompt-glyph">&gt;</span>
+        <textarea
+          ref={textareaRef}
+          className="input"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={
+            streaming
+              ? "streaming…"
+              : (placeholder ?? "ask anything · type / for commands · @app to route")
+          }
+          rows={1}
+          spellCheck={false}
+          autoComplete="off"
+          autoCorrect="off"
+        />
+      </div>
+      <div className="helprow">
+        {streaming ? (
+          <button className="stop-btn" onClick={onAbort}>
+            [stop]
+          </button>
+        ) : (
+          <>
+            <span><kbd>↵</kbd>send</span>
+            <span><kbd>⇧↵</kbd>newline</span>
+            <span><kbd>/</kbd>commands</span>
+            <span><kbd>@</kbd>route to app</span>
+          </>
+        )}
+      </div>
     </div>
   );
 }

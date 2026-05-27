@@ -18,8 +18,11 @@ function todayLabel() {
   });
 }
 
+const HOLES = 7;
+
 export function DiaryCompose({ onSend, onAbort, disabled, streaming }: Props) {
   const [value, setValue] = useState("");
+  const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -29,12 +32,18 @@ export function DiaryCompose({ onSend, onAbort, disabled, streaming }: Props) {
   const submit = useCallback(() => {
     const trimmed = value.trim();
     if (!trimmed || streaming) return;
+    setSaveStatus("saving…");
     onSend(trimmed);
     setValue("");
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-    }
   }, [value, streaming, onSend]);
+
+  useEffect(() => {
+    if (!streaming && saveStatus === "saving…") {
+      setSaveStatus("saved");
+      const t = setTimeout(() => setSaveStatus(null), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [streaming, saveStatus]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -44,51 +53,64 @@ export function DiaryCompose({ onSend, onAbort, disabled, streaming }: Props) {
       }
       if (e.key === "Escape") {
         setValue("");
-        if (textareaRef.current) textareaRef.current.style.height = "auto";
       }
     },
     [submit],
   );
 
   return (
-    <div className="diary-compose">
-      <div className="diary-date"># {todayLabel()}</div>
-      <textarea
-        ref={textareaRef}
-        className="diary-field"
-        value={value}
-        onChange={(e) => {
-          setValue(e.target.value);
-          e.target.style.height = "auto";
-          e.target.style.height = `${Math.min(e.target.scrollHeight, 300)}px`;
-        }}
-        onKeyDown={handleKeyDown}
-        placeholder={
-          "write anything — tasks you completed, meetings you had, meals you ate...\n\n" +
-          "tasks → circuit  ·  interactions → canopy  ·  meals → chef\n\n" +
-          "Ctrl+Enter to save"
-        }
-        rows={6}
-        spellCheck={false}
-        autoComplete="off"
-        autoCorrect="off"
-        disabled={false}
-      />
-      <div className="diary-footer">
-        <span className="diary-hint">
-          {streaming ? "routing entries to apps…" : "Ctrl+Enter to save · Esc to clear"}
-        </span>
+    <div className="diary">
+      {/* punched holes */}
+      <div className="diary-holes" aria-hidden>
+        {Array.from({ length: HOLES }).map((_, i) => (
+          <div key={i} className="diary-hole" />
+        ))}
+      </div>
+
+      {/* date header */}
+      <div className="diary-head">
+        <span className="date">{todayLabel()}</span>
+      </div>
+
+      {/* writing surface */}
+      <div className="diary-surface ruled">
+        <textarea
+          ref={textareaRef}
+          className="diary-text"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={
+            "what happened today…\n\ntasks → circuit  ·  interactions → canopy  ·  meals → chef"
+          }
+          spellCheck
+          autoComplete="off"
+          autoCorrect="on"
+        />
+      </div>
+
+      {/* foot */}
+      <div className="diary-foot">
         {streaming ? (
-          <button className="send-btn" onClick={onAbort}>
-            [stop]
+          <span className="save-status">routing entries to apps…</span>
+        ) : saveStatus ? (
+          <span className="save-status">{saveStatus}</span>
+        ) : (
+          <span>
+            <kbd>Ctrl+Enter</kbd>save · <kbd>Esc</kbd>clear
+          </span>
+        )}
+        {streaming ? (
+          <button className="diary-save-btn" onClick={onAbort}>
+            stop
           </button>
         ) : (
           <button
-            className="send-btn"
+            className="diary-save-btn"
             onClick={submit}
             disabled={!value.trim() || disabled}
           >
-            [save]
+            save entry
           </button>
         )}
       </div>

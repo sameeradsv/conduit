@@ -5,7 +5,7 @@ export interface UIMessage extends Message {
   streaming?: boolean;
 }
 
-const PREFIX: Record<string, string> = {
+const GLYPH: Record<string, string> = {
   user:      ">",
   assistant: "~",
   system:    "#",
@@ -14,15 +14,15 @@ const PREFIX: Record<string, string> = {
 export function MessageRow({ message }: { message: UIMessage }) {
   const { role, content, streaming } = message;
   const isError = content.startsWith("! ");
-  const displayRole = isError ? "error" : role === "assistant" ? "ai" : role;
-  const prefix = isError ? "!" : (PREFIX[role] ?? "#");
+  const kind = isError ? "error" : role === "assistant" ? "ai" : role === "user" ? "user" : "sys";
+  const glyph = isError ? "!" : (GLYPH[role] ?? "#");
 
   return (
-    <div className={`msg-row ${displayRole}`}>
-      <span className={`msg-prefix ${displayRole}`}>{prefix}</span>
-      <span className={`msg-body ${displayRole}`}>
+    <div className={`line ${kind}`}>
+      <span className="glyph">{glyph}</span>
+      <span className="body">
         {content}
-        {streaming && <span className="stream-cursor" aria-hidden />}
+        {streaming && <span className="caret-blink" aria-hidden />}
       </span>
     </div>
   );

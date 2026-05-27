@@ -20,7 +20,6 @@ export default function LoginPage() {
     if (!loading && isAuthenticated) router.push("/");
   }, [isAuthenticated, loading, router]);
 
-  // reset fields when switching mode
   const switchMode = (next: Mode) => {
     setMode(next);
     setSecret("");
@@ -55,33 +54,36 @@ export default function LoginPage() {
 
   return (
     <div className="login-shell">
-      <div className="login-box">
-        <div className="login-title">conduit</div>
-        <div className="login-sub">terminal AI chat · sign in to continue</div>
+      <div className="login-card">
+        {/* corner brackets */}
+        <div className="corner tl" />
+        <div className="corner tr" />
+        <div className="corner bl" />
+        <div className="corner br" />
 
-        {/* mode tabs */}
-        <div className="login-tabs">
+        <h1>conduit</h1>
+        <p className="subtitle">terminal ai chat · sign in to continue</p>
+
+        <div className="auth-tabs">
           <button
-            className={`login-tab${mode === "cortex" ? " active" : ""}`}
+            className="auth-tab"
+            aria-current={mode === "cortex"}
             onClick={() => switchMode("cortex")}
           >
             cortex account
           </button>
           <button
-            className={`login-tab${mode === "conduit" ? " active" : ""}`}
+            className="auth-tab"
+            aria-current={mode === "conduit"}
             onClick={() => switchMode("conduit")}
           >
             conduit account
           </button>
         </div>
 
-        <div className="login-field">
-          <label className="login-label" htmlFor="username">
-            username
-          </label>
+        <label className="field">
+          <span>username</span>
           <input
-            id="username"
-            className="login-input"
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
@@ -90,48 +92,41 @@ export default function LoginPage() {
             autoComplete="username"
             spellCheck={false}
           />
-        </div>
+        </label>
 
-        <div className="login-field">
-          <label className="login-label" htmlFor="secret">
-            {mode === "cortex" ? "password" : "passcode"}
-          </label>
+        <label className="field">
+          <span>{mode === "cortex" ? "password" : "passcode"}</span>
           <input
-            id="secret"
-            className="login-input"
             type="password"
             value={secret}
             onChange={(e) => setSecret(e.target.value)}
             onKeyDown={onKey}
             autoComplete="current-password"
           />
-        </div>
+        </label>
 
         {error && <div className="login-error">! {error}</div>}
 
-        <div className="login-actions">
+        <button
+          className="submit-btn"
+          onClick={() => handle("login")}
+          disabled={busy || !username || !secret}
+        >
+          {busy ? "…" : "sign in"}
+        </button>
+
+        {mode === "conduit" && (
           <button
-            className="login-btn primary"
-            onClick={() => handle("login")}
+            className="secondary-btn"
+            onClick={() => handle("register")}
             disabled={busy || !username || !secret}
           >
-            {busy ? "…" : "[login]"}
+            {busy ? "…" : "register"}
           </button>
-          {mode === "conduit" && (
-            <button
-              className="login-btn"
-              onClick={() => handle("register")}
-              disabled={busy || !username || !secret}
-            >
-              {busy ? "…" : "[register]"}
-            </button>
-          )}
-        </div>
+        )}
 
         {mode === "cortex" && (
-          <div className="login-hint">
-            sign in with your shared cortex account
-          </div>
+          <p className="login-hint">sign in with your shared cortex account</p>
         )}
       </div>
     </div>

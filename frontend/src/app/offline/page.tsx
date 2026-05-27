@@ -1,15 +1,12 @@
 export default function OfflinePage() {
   return (
     <div className="offline-shell">
-      <div>
-        <div style={{ color: "var(--accent)", marginBottom: 8 }}>conduit</div>
-        <div># connection lost</div>
-        <div
-          style={{ color: "var(--fg-faint)", marginTop: 4, fontSize: 11 }}
-        >
-          no network available — check your connection and refresh
-        </div>
-      </div>
+      <pre style={{ color: "var(--dim)", fontSize: "var(--fs-sm)", lineHeight: 1.1, margin: 0 }}>{`
+  ┌─────────────────┐
+  │  no connection  │
+  └─────────────────┘`}</pre>
+      <h2>no connection</h2>
+      <p>network unavailable — check your connection and refresh to reconnect</p>
     </div>
   );
 }

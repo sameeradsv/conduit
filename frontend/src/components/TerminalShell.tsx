@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { MessageFeed } from "./MessageFeed";
 import { CommandInput } from "./CommandInput";
 import { DiaryCompose } from "./DiaryCompose";
@@ -68,10 +68,21 @@ function loadMode(): ChatMode {
   if (typeof window === "undefined") return "chat";
   const stored = localStorage.getItem("conduit-mode");
   if (stored === "agent" || stored === "diary") return stored;
-  // migrate legacy conduit-agent flag
   if (localStorage.getItem("conduit-agent") === "true") return "agent";
   return "chat";
 }
+
+const MODES: { id: ChatMode; label: string; key: string }[] = [
+  { id: "chat",  label: "chat",  key: "1" },
+  { id: "agent", label: "agent", key: "2" },
+  { id: "diary", label: "diary", key: "3" },
+];
+
+const MODE_MSGS: Record<ChatMode, string> = {
+  chat:  "chat mode — direct LLM, no tools.",
+  agent: "agent mode on — circuit, canopy, and chef are available.",
+  diary: "diary mode on — write anything and it will be routed silently.\ntasks → circuit · interactions → canopy · meals → chef",
+};
 
 export function TerminalShell() {
   const { user, logout } = useAuth();
@@ -87,7 +98,18 @@ export function TerminalShell() {
   const [tokenCount, setTokenCount] = useState(0);
   const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM);
   const [chatMode, setChatMode] = useState<ChatMode>(loadMode);
+  const [userOpen, setUserOpen] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const uref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!userOpen) return;
+    const off = (e: PointerEvent) => {
+      if (uref.current && !uref.current.contains(e.target as Node)) setUserOpen(false);
+    };
+    document.addEventListener("pointerdown", off, true);
+    return () => document.removeEventListener("pointerdown", off, true);
+  }, [userOpen]);
 
   const setMode = useCallback((mode: ChatMode) => {
     setChatMode(mode);
@@ -138,10 +160,7 @@ export function TerminalShell() {
             addSystem("diary mode off.");
           } else {
             setMode("diary");
-            addSystem(
-              "diary mode on — write anything and it will be routed silently.\n" +
-              "tasks → circuit · interactions → canopy · meals → chef",
-            );
+            addSystem(MODE_MSGS.diary);
           }
           return true;
         case "/model": {
@@ -180,7 +199,6 @@ export function TerminalShell() {
       const trimmed = text.trim();
       if (!trimmed) return;
 
-      // /digest: must be checked before the general slash router
       if (trimmed === "/digest") {
         const digestPrompt =
           "Daily digest — use your tools to fetch everything and give me a concise briefing: " +
@@ -275,7 +293,6 @@ export function TerminalShell() {
 
       abortRef.current = new AbortController();
 
-      // ── Diary mode: silent write routing, no AI response ─────────
       if (chatMode === "diary") {
         try {
           for await (const _ of streamAgentChat(
@@ -286,7 +303,7 @@ export function TerminalShell() {
             undefined,
             (results) => addSystem(formatConfirmation(results)),
             true,
-          )) { /* no deltas in diary mode */ }
+          )) { /* diary mode: no streaming deltas */ }
           setStatus("ready");
         } catch (err: unknown) {
           const isAbort = err instanceof Error && err.name === "AbortError";
@@ -304,7 +321,6 @@ export function TerminalShell() {
         return;
       }
 
-      // ── Agent / chat mode: streaming AI response ──────────────────
       const aiId = addMsg({ role: "assistant", content: "", streaming: true });
       let fullContent = "";
 
@@ -369,45 +385,61 @@ export function TerminalShell() {
   const currentModel = MODELS.find((m) => m.id === model)?.label ?? model;
 
   return (
-    <div className="shell">
+    <div className="shell" data-mode={chatMode}>
+      {/* topbar — bracket variant */}
       <div className="topbar">
         <span className="brand">conduit</span>
-        <span className="topbar-sep">·</span>
-        <ModelPicker value={model} onChange={setModel} />
         <span className="topbar-grow" />
+        <ModelPicker value={model} onChange={setModel} />
         <ThemeToggle />
         {user && (
-          <button className="theme-btn" onClick={logout} title="sign out">
-            {user.username} ↩
-          </button>
+          <div className="dropdown" ref={uref}>
+            <button className="pill-btn" onClick={() => setUserOpen((o) => !o)}>
+              <span className="dim">@</span>{user.username}{" "}
+              <span className="caret">▾</span>
+            </button>
+            {userOpen && (
+              <div className="menu">
+                <div className="head">─── session ───</div>
+                <button
+                  onClick={() => {
+                    setUserOpen(false);
+                    logout();
+                  }}
+                >
+                  <span className="marker" style={{ color: "var(--err)" }}>×</span>
+                  logout
+                </button>
+              </div>
+            )}
+          </div>
         )}
       </div>
 
-      <div className="mode-bar" role="tablist" aria-label="Chat mode">
-        {(["chat", "agent", "diary"] as const).map((m) => (
+      {/* modebar */}
+      <div className="modebar" role="tablist" aria-label="Chat mode">
+        {MODES.map((m) => (
           <button
-            key={m}
+            key={m.id}
             role="tab"
-            aria-selected={chatMode === m}
-            className={`mode-tab${chatMode === m ? " active" : ""}`}
+            aria-current={chatMode === m.id}
+            className="mode"
             onClick={() => {
-              if (chatMode === m) return;
-              setMode(m);
-              const labels: Record<ChatMode, string> = {
-                chat:  "chat mode — direct LLM, no tools.",
-                agent: "agent mode on — circuit, canopy, and chef are available.",
-                diary: "diary mode on — write anything and it will be routed silently.\ntasks → circuit · interactions → canopy · meals → chef",
-              };
-              addSystem(labels[m]);
+              if (chatMode === m.id) return;
+              setMode(m.id);
+              addSystem(MODE_MSGS[m.id]);
             }}
           >
-            {m}
+            <span className="key">⌘{m.key}</span>{m.label}
           </button>
         ))}
+        <div className="filler" />
       </div>
 
+      {/* feed — hidden in diary mode via CSS */}
       <MessageFeed messages={messages} />
 
+      {/* composer / diary */}
       {chatMode === "diary" ? (
         <DiaryCompose
           onSend={handleSend}
@@ -424,7 +456,12 @@ export function TerminalShell() {
         />
       )}
 
-      <StatusBar model={currentModel} tokenCount={tokenCount} status={status} />
+      <StatusBar
+        model={currentModel}
+        tokenCount={tokenCount}
+        status={status}
+        mode={chatMode}
+      />
     </div>
   );
 }

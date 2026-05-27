@@ -4,21 +4,41 @@ interface Props {
   model: string;
   tokenCount: number;
   status: AppStatus;
+  mode: string;
 }
 
-export function StatusBar({ model, tokenCount, status }: Props) {
+export function StatusBar({ model, tokenCount, status, mode }: Props) {
+  const dotClass =
+    status === "streaming" ? "streaming" :
+    status === "error"     ? "error"     :
+                             "ready";
+
   const statusLabel =
-    status === "streaming" ? "● streaming" :
-    status === "error"     ? "● error"     :
-                             "● ready";
+    status === "streaming" ? "streaming…" :
+    status === "error"     ? "connection lost" :
+                             "ready";
 
   return (
     <div className="statusbar">
-      <span>{model}</span>
-      <span className="sep">·</span>
-      <span>{tokenCount} tok</span>
-      <span className="sep">·</span>
-      <span className={`s-${status}`}>{statusLabel}</span>
+      <span className="seg">
+        <span className="k">model</span>
+        <span className="v">{model}</span>
+      </span>
+      <span className="pipe">│</span>
+      <span className="seg">
+        <span className="k">tok</span>
+        <span className="v">{tokenCount}</span>
+      </span>
+      <span className="grow" />
+      <span className="seg">
+        <span className="k">mode</span>
+        <span className="v">{mode}</span>
+      </span>
+      <span className="pipe">│</span>
+      <span className="seg">
+        <span className={`dot ${dotClass}`} />
+        <span className="v">{statusLabel}</span>
+      </span>
     </div>
   );
 }

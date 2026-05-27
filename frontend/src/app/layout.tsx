@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { JetBrains_Mono } from "next/font/google";
+import { JetBrains_Mono, Caveat, Special_Elite } from "next/font/google";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SWRegistrar } from "@/components/SWRegistrar";
@@ -7,8 +7,22 @@ import "./globals.css";
 
 const jetbrains = JetBrains_Mono({
   subsets: ["latin"],
-  weight: ["400", "500"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-jetbrains",
+  display: "swap",
+});
+
+const caveat = Caveat({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-caveat",
+  display: "swap",
+});
+
+const specialElite = Special_Elite({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-special-elite",
   display: "swap",
 });
 
@@ -40,8 +54,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: dark)",  color: "#0b110b" },
-    { media: "(prefers-color-scheme: light)", color: "#f4f9f4" },
+    { media: "(prefers-color-scheme: dark)",  color: "#0a0e0a" },
+    { media: "(prefers-color-scheme: light)", color: "#f4ecd8" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -50,9 +64,12 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="phosphor" className={jetbrains.variable}>
+    <html
+      lang="en"
+      data-theme="phosphor"
+      className={`${jetbrains.variable} ${caveat.variable} ${specialElite.variable}`}
+    >
       <head>
-        {/* Prevent theme flash before hydration */}
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){var t=localStorage.getItem('conduit-theme')||'phosphor';document.documentElement.setAttribute('data-theme',t);})()`,
