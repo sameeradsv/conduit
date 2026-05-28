@@ -23,7 +23,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("conduit-theme", t);
     document.documentElement.setAttribute("data-theme", t);
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", t === "phosphor" ? "#0b110b" : "#f4f9f4");
+    if (meta) meta.setAttribute("content", "#0d0d0d");
   }
 
   return (
