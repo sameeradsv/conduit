@@ -6,6 +6,7 @@ import { CommandInput } from "./CommandInput";
 import { DiaryCompose } from "./DiaryCompose";
 import { StatusBar, type AppStatus } from "./StatusBar";
 import { ModelPicker } from "./ModelPicker";
+import { ThemeToggle } from "./ThemeToggle";
 import { PasskeyBanner } from "./PasskeyBanner";
 import {
   streamChat,
@@ -416,6 +417,7 @@ export function TerminalShell() {
       <div className="topbar">
         <span className="brand">conduit</span>
         <span className="topbar-grow" />
+        <ThemeToggle />
         <ModelPicker value={model} onChange={setModel} />
         {user && (
           <div className="dropdown" ref={uref}>

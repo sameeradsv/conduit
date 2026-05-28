@@ -2,9 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Design tokens — dark, white text ────────────────────────── */
+/* ── Design tokens — phosphor (neon green CRT) ───────────────── */
 :root,
 [data-theme="phosphor"] {
+  --bg:        #0a0e0a;
+  --bg-1:      #0f130f;
+  --bg-2:      #161c16;
+  --ink:       #33ff66;
+  --ink-soft:  #4dff80;
+  --ink-bold:  #7fffa0;
+  --dim:       #1a7a3a;
+  --dim-2:     #2a5238;
+  --rule:      #1a3a26;
+  --user:      #7fffa0;
+  --ai:        #33ff66;
+  --sys:       #5fc888;
+  --err:       #ff4490;
+  --warn:      #ffb000;
+  --accent-2:  #4dd0ff;
+  --glow:      0 0 8px rgba(51, 255, 102, 0.35);
+  --selection: rgba(51, 255, 102, 0.25);
+  color-scheme: dark;
+}
+
+/* ── Design tokens — white (dark, neutral) ───────────────────── */
+[data-theme="white"] {
   --bg:        #0d0d0d;
   --bg-1:      #111111;
   --bg-2:      #1a1a1a;

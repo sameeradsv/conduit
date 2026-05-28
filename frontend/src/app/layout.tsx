@@ -54,7 +54,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: dark)",  color: "#0d0d0d" },
+    { media: "(prefers-color-scheme: dark)",  color: "#0a0e0a" },
     { media: "(prefers-color-scheme: light)", color: "#0d0d0d" },
   ],
   width: "device-width",
@@ -72,7 +72,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){document.documentElement.setAttribute('data-theme','phosphor');})()`,
+            __html: `(function(){var t=localStorage.getItem('conduit-theme')||'phosphor';document.documentElement.setAttribute('data-theme',t);})()`,
           }}
         />
       </head>

@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 
-export type Theme = "phosphor";
+export type Theme = "phosphor" | "white";
 
 const ThemeContext = createContext<{
   theme: Theme;
@@ -23,7 +23,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("conduit-theme", t);
     document.documentElement.setAttribute("data-theme", t);
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", "#0d0d0d");
+    if (meta) meta.setAttribute("content", t === "white" ? "#0d0d0d" : "#0a0e0a");
   }
 
   return (
