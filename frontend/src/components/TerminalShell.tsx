@@ -10,6 +10,7 @@ import { PasskeyBanner } from "./PasskeyBanner";
 import {
   streamChat,
   streamAgentChat,
+  streamWakeup,
   saveSession,
   type Message,
   type ModelId,
@@ -32,6 +33,7 @@ const HELP_TEXT = `conduit — available commands:
   /agent             toggle agent mode (live data from circuit/canopy/chef)
   /diary             toggle diary mode (log entries silently, no response)
   /digest            fetch a daily briefing from all apps
+  /wakeup            ping circuit, canopy, and chef to wake them from idle
   /clear             clear chat history
   /logout            sign out`;
 
@@ -198,6 +200,30 @@ export function TerminalShell() {
     async (text: string) => {
       const trimmed = text.trim();
       if (!trimmed) return;
+
+      if (trimmed === "/wakeup") {
+        addSystem("~ pinging circuit, canopy, chef...");
+        setStatus("streaming");
+        abortRef.current = new AbortController();
+        try {
+          for await (const event of streamWakeup(abortRef.current.signal)) {
+            if ("done" in event && event.done) break;
+            const icon = event.ok ? "✓" : "✗";
+            addSystem(`${icon}  ${event.app.padEnd(10)}${event.elapsed}s`);
+          }
+          setStatus("ready");
+        } catch (err: unknown) {
+          const isAbort = err instanceof Error && err.name === "AbortError";
+          if (!isAbort) {
+            addSystem(`! ${err instanceof Error ? err.message : "unknown error"}`);
+            setStatus("error");
+            setTimeout(() => setStatus("ready"), 3000);
+          } else {
+            setStatus("ready");
+          }
+        }
+        return;
+      }
 
       if (trimmed === "/digest") {
         const digestPrompt =

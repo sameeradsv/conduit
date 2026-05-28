@@ -55,6 +55,33 @@ export interface ConfirmationItem {
   success: boolean;
 }
 
+export type WakeupEvent =
+  | { app: string; ok: boolean; elapsed: number; done?: never }
+  | { done: true; app?: never };
+
+export async function* streamWakeup(signal?: AbortSignal): AsyncGenerator<WakeupEvent> {
+  const res = await fetch(apiUrl("/api/wakeup"), { signal });
+  if (!res.ok) throw new Error(`wakeup failed: HTTP ${res.status}`);
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split("\n");
+    buf = lines.pop() ?? "";
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      try {
+        yield JSON.parse(line.slice(6)) as WakeupEvent;
+      } catch {
+        // skip malformed lines
+      }
+    }
+  }
+}
+
 export async function* streamAgentChat(
   messages: Message[],
   model: ModelId,
