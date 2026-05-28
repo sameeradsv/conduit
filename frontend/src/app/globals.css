@@ -25,8 +25,8 @@
   color-scheme: dark;
 }
 
-/* ── Design tokens — white (dark, neutral) ───────────────────── */
-[data-theme="white"] {
+/* ── Design tokens — ghost (dark, neutral white) ─────────────── */
+[data-theme="ghost"] {
   --bg:        #0d0d0d;
   --bg-1:      #111111;
   --bg-2:      #1a1a1a;
