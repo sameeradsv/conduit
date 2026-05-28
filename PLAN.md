@@ -49,6 +49,7 @@ The same terminal-like shell is also embedded inside each sibling app for contex
 - `/digest` command: fetches daily briefing from all three apps
 - Diary mode: suppresses AI response, shows confirmation summary (`✓ circuit create_task × 2`)
 - PWA installable, deployed on GitHub Pages + Render
+- WebAuthn passkey / biometric sign-in (`usePasskey` hook, `PasskeyBanner` post-login prompt)
 
 ---
 
@@ -125,4 +126,5 @@ Auth flow:
 - **Groq-only backend**: MVP uses Groq; multi-provider (Claude, GPT-4o, Gemini, Ollama) is a later phase
 - **Diary mode suppresses AI response**: confirmed design — only a structured confirmation is shown, not a full model reply
 - **Conduit as orchestrator only**: circuit/canopy/chef have no inter-app calls; all coordination goes through conduit
-- **Terminal-first UI**: no rounded cards, no icons, JetBrains Mono everywhere, phosphor/terminal themes
+- **Terminal-first UI**: no rounded cards, no icons, JetBrains Mono everywhere, phosphor theme only
+- **Single theme (phosphor)**: terminal/light theme removed; Dancing Script replaces Caveat for diary handwriting font

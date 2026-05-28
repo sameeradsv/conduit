@@ -50,9 +50,9 @@ backend/    FastAPI · Groq SDK
             Tool executor → circuit / canopy / chef APIs
 ```
 
-Auth: `@shared/cortex` — local users + optional Cortex server fallback  
+Auth: `@shared/cortex` — local users + optional Cortex server fallback · passkey/biometric via WebAuthn  
 PWA: installable on iOS/Android via GitHub Pages  
-Themes: `phosphor` (dark, neon green) · `terminal` (light, ink-on-paper)
+Theme: `phosphor` (dark, neon green CRT)
 
 ---
 
@@ -77,6 +77,11 @@ GROQ_API_KEY=...              # required — free at console.groq.com
 CIRCUIT_URL=http://localhost:8001
 CANOPY_URL=http://localhost:8002
 CHEF_URL=http://localhost:8003
+
+# WebAuthn (passkey login) — set these in production
+WEBAUTHN_RP_ID=your-domain.com
+WEBAUTHN_ORIGIN=https://your-domain.com
+WEBAUTHN_RP_NAME=conduit
 ```
 
 ### Frontend
@@ -169,5 +174,6 @@ conduit/
       components/ TerminalShell, DiaryCompose, CommandInput, MessageFeed, ...
       lib/        api.ts (SSE streaming), auth.ts
       contexts/   AuthContext, ThemeContext
+      hooks/      usePasskey (WebAuthn passkey registration + login)
   render.yaml
 ```
