@@ -232,8 +232,11 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .feed::-webkit-scrollbar-thumb { background: var(--dim-2); border-radius: 0; }
 .feed::-webkit-scrollbar-track { background: transparent; }
 
-/* hide feed completely in diary mode — diary surface takes over */
-.shell[data-mode="diary"] .feed { display: none; }
+/* diary mode — full screen, hide all chrome */
+.shell[data-mode="diary"] .feed      { display: none; }
+.shell[data-mode="diary"] .topbar    { display: none; }
+.shell[data-mode="diary"] .modebar   { display: none; }
+.shell[data-mode="diary"] .statusbar { display: none; }
 
 /* ── Message line ─────────────────────────────────────────────── */
 .line {
@@ -445,6 +448,20 @@ button, input, textarea, select { font: inherit; color: inherit; }
   position: relative;
   z-index: 1;
 }
+.diary-back {
+  background: transparent;
+  border: 0;
+  color: var(--pen-soft);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: var(--fs-sm);
+  padding: 0;
+  flex-shrink: 0;
+  align-self: center;
+  letter-spacing: 0.02em;
+  opacity: 0.7;
+}
+.diary-back:hover { color: var(--pen); opacity: 1; }
 .diary-head .date {
   font-family: var(--type);
   font-size: 22px;
@@ -786,7 +803,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
 
   .feed { padding: 10px 14px 8px; }
 
-  .diary-head { padding: 14px 18px 10px 60px; }
+  .diary-head { padding: 14px 18px 10px 60px; gap: 12px; }
   .diary-surface { padding: 14px 20px 20px 72px; }
   .diary-surface::before { left: 48px; }
   .diary-surface::after  { left: 52px; }

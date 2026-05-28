@@ -472,6 +472,7 @@ export function TerminalShell() {
         <DiaryCompose
           onSend={handleSend}
           onAbort={handleAbort}
+          onBack={() => { setMode("chat"); addSystem("diary mode off."); }}
           disabled={status === "streaming"}
           streaming={status === "streaming"}
         />

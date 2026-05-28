@@ -5,6 +5,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 interface Props {
   onSend: (text: string) => void;
   onAbort: () => void;
+  onBack: () => void;
   disabled: boolean;
   streaming: boolean;
 }
@@ -20,7 +21,7 @@ function todayLabel() {
 
 const HOLES = 7;
 
-export function DiaryCompose({ onSend, onAbort, disabled, streaming }: Props) {
+export function DiaryCompose({ onSend, onAbort, onBack, disabled, streaming }: Props) {
   const [value, setValue] = useState("");
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -69,6 +70,9 @@ export function DiaryCompose({ onSend, onAbort, disabled, streaming }: Props) {
 
       {/* date header */}
       <div className="diary-head">
+        <button className="diary-back" onClick={onBack} aria-label="Exit diary mode">
+          ← back
+        </button>
         <span className="date">{todayLabel()}</span>
       </div>
 
