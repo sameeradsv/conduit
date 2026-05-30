@@ -8,16 +8,18 @@ export function PasskeyBanner() {
   const [dismissed, setDismissed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   if (!supported || registered || dismissed || done) return null;
 
   async function handleEnable() {
     setBusy(true);
+    setErr(null);
     try {
       await registerPasskey();
       setDone(true);
-    } catch {
-      setDismissed(true);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Registration failed");
     } finally {
       setBusy(false);
     }
@@ -38,7 +40,11 @@ export function PasskeyBanner() {
       }}
     >
       <span style={{ color: "var(--sys)" }}>~</span>
-      <span>enable biometric sign-in?</span>
+      {err ? (
+        <span style={{ color: "var(--err, #f66)" }}>{err}</span>
+      ) : (
+        <span>enable biometric sign-in?</span>
+      )}
       <button
         onClick={handleEnable}
         disabled={busy}
