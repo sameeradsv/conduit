@@ -13,7 +13,7 @@ Terminal-style AI hub for the personal app ecosystem. Query and update your task
 |------|---------|--------------|
 | **Chat** | default | Direct Groq streaming — no tools |
 | **Agent** | `/agent` or toggle | Reads live data from circuit, canopy, chef via tools |
-| **Diary** | `/diary` or toggle | Block-level compose area; entries silently routed to apps |
+| **Diary** | `/diary` or toggle | Full-screen compose (Kalam hand font); supports past-date entries; routes to apps |
 | **Digest** | `/digest` | One-shot daily briefing from all three apps |
 
 ### Agent mode — example questions
@@ -50,9 +50,9 @@ backend/    FastAPI · Groq SDK
             Tool executor → circuit / canopy / chef APIs
 ```
 
-Auth: `@shared/cortex` — local users + optional Cortex server fallback · passkey/biometric via WebAuthn  
-PWA: installable on iOS/Android via GitHub Pages  
-Theme: `phosphor` (dark, neon green CRT)
+Auth: `@shared/cortex` — local users + optional Cortex server fallback · passkey/biometric via WebAuthn (`/passkey` command)  
+PWA: installable on iOS/Android via GitHub Pages · safe-area insets for notch/Dynamic Island  
+Themes: `phosphor` (dark, neon green) · `ghost` (dark, white text) — toggled from the top bar
 
 ---
 
@@ -101,8 +101,10 @@ App: http://localhost:3000
 
 ```
 /agent             toggle agent mode (reads from circuit / canopy / chef)
-/diary             toggle diary mode (block compose, silent routing to apps)
+/diary             toggle diary mode (full-screen compose, silent routing to apps)
 /digest            fetch daily briefing from all apps
+/wakeup            ping circuit, canopy, and chef to wake them from cold start
+/passkey           enable biometric sign-in on this device
 /model <id>        switch model
 /system <text>     set system prompt
 /chat              return to direct chat mode
