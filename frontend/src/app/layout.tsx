@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { JetBrains_Mono, Caveat, Special_Elite } from "next/font/google";
+import { JetBrains_Mono, Kalam, Special_Elite } from "next/font/google";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SWRegistrar } from "@/components/SWRegistrar";
@@ -12,10 +12,10 @@ const jetbrains = JetBrains_Mono({
   display: "swap",
 });
 
-const caveat = Caveat({
+const kalam = Kalam({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-caveat",
+  weight: ["300", "400", "700"],
+  variable: "--font-kalam",
   display: "swap",
 });
 
@@ -67,7 +67,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       data-theme="phosphor"
-      className={`${jetbrains.variable} ${caveat.variable} ${specialElite.variable}`}
+      className={`${jetbrains.variable} ${kalam.variable} ${specialElite.variable}`}
     >
       <head>
         <script

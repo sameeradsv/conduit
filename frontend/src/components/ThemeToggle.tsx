@@ -11,7 +11,7 @@ export function ThemeToggle() {
       onClick={() => setTheme(next)}
       title={`Switch to ${next} theme`}
     >
-      {theme === "phosphor" ? "◑ green" : "◑ ghost"}
+      {theme === "phosphor" ? "◑ phosphor" : "◑ ghost"}
     </button>
   );
 }

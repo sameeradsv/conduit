@@ -58,7 +58,7 @@
   --lh:     1.45;
   --pad-x:  18px;
   --font:   var(--font-jetbrains, "JetBrains Mono"), ui-monospace, SFMono-Regular, Menlo, monospace;
-  --hand:   var(--font-caveat, "Caveat"), cursive;
+  --hand:   var(--font-kalam, "Kalam"), cursive;
   --type:   var(--font-special-elite, "Special Elite"), "Courier New", monospace;
 }
 
@@ -632,7 +632,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
   cursor: pointer;
   font-family: var(--hand);
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0;
   text-transform: none;
   transform: rotate(-0.5deg);
