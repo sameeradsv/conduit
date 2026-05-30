@@ -7,7 +7,7 @@ import { DiaryCompose } from "./DiaryCompose";
 import { StatusBar, type AppStatus } from "./StatusBar";
 import { ModelPicker } from "./ModelPicker";
 import { ThemeToggle } from "./ThemeToggle";
-import { PasskeyBanner } from "./PasskeyBanner";
+import { usePasskey } from "@/hooks/usePasskey";
 import {
   streamChat,
   streamAgentChat,
@@ -35,6 +35,7 @@ const HELP_TEXT = `conduit — available commands:
   /diary             toggle diary mode (log entries silently, no response)
   /digest            fetch a daily briefing from all apps
   /wakeup            ping circuit, canopy, and chef to wake them from idle
+  /passkey           enable biometric sign-in on this device
   /clear             clear chat history
   /logout            sign out`;
 
@@ -89,6 +90,7 @@ const MODE_MSGS: Record<ChatMode, string> = {
 
 export function TerminalShell() {
   const { user, logout } = useAuth();
+  const { supported: passkeySupported, registered: passkeyRegistered, registerPasskey } = usePasskey();
   const [messages, setMessages] = useState<UIMessage[]>([
     {
       id: uid(),
@@ -222,6 +224,25 @@ export function TerminalShell() {
           } else {
             setStatus("ready");
           }
+        }
+        return;
+      }
+
+      if (trimmed === "/passkey") {
+        if (!passkeySupported) {
+          addSystem("! biometric auth not supported on this device.");
+          return;
+        }
+        if (passkeyRegistered) {
+          addSystem("~ biometric sign-in already enabled on this device.");
+          return;
+        }
+        addSystem("~ registering passkey...");
+        try {
+          await registerPasskey();
+          addSystem("✓  biometric sign-in enabled.");
+        } catch (err: unknown) {
+          addSystem(`! ${err instanceof Error ? err.message : "passkey registration failed"}`);
         }
         return;
       }
@@ -402,7 +423,7 @@ export function TerminalShell() {
         if (!isAbort) setTimeout(() => setStatus("ready"), 3000);
       }
     },
-    [messages, model, systemPrompt, chatMode, addMsg, addSystem, handleSlashCommand],
+    [messages, model, systemPrompt, chatMode, addMsg, addSystem, handleSlashCommand, passkeySupported, passkeyRegistered, registerPasskey],
   );
 
   const handleAbort = useCallback(() => {
@@ -462,8 +483,6 @@ export function TerminalShell() {
         ))}
         <div className="filler" />
       </div>
-      <PasskeyBanner />
-
       {/* feed — hidden in diary mode via CSS */}
       <MessageFeed messages={messages} />
 
