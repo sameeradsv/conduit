@@ -58,7 +58,7 @@
   --lh:     1.45;
   --pad-x:  18px;
   --font:   var(--font-jetbrains, "JetBrains Mono"), ui-monospace, SFMono-Regular, Menlo, monospace;
-  --hand:   var(--font-dancing, "Dancing Script"), cursive;
+  --hand:   var(--font-caveat, "Caveat"), cursive;
   --type:   var(--font-special-elite, "Special Elite"), "Courier New", monospace;
 }
 
@@ -462,6 +462,35 @@ button, input, textarea, select { font: inherit; color: inherit; }
   opacity: 0.7;
 }
 .diary-back:hover { color: var(--pen); opacity: 1; }
+
+.diary-date-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  cursor: pointer;
+}
+.diary-date-wrap:hover .date { opacity: 0.75; }
+.diary-date-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  padding: 0;
+}
+.diary-past-badge {
+  font-family: var(--font);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--margin-ink);
+  opacity: 0.9;
+  align-self: center;
+}
+
 .diary-head .date {
   font-family: var(--type);
   font-size: 22px;
@@ -469,7 +498,9 @@ button, input, textarea, select { font: inherit; color: inherit; }
   letter-spacing: 0.04em;
   color: var(--pen);
   text-transform: lowercase;
+  transition: opacity 0.1s;
 }
+.diary-head .date.past { color: var(--pen-soft); }
 
 /* writing surface */
 .diary-surface {

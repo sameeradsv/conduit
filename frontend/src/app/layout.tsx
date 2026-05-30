@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { JetBrains_Mono, Dancing_Script, Special_Elite } from "next/font/google";
+import { JetBrains_Mono, Caveat, Special_Elite } from "next/font/google";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SWRegistrar } from "@/components/SWRegistrar";
@@ -12,10 +12,10 @@ const jetbrains = JetBrains_Mono({
   display: "swap",
 });
 
-const dancingScript = Dancing_Script({
+const caveat = Caveat({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-  variable: "--font-dancing",
+  variable: "--font-caveat",
   display: "swap",
 });
 
@@ -67,7 +67,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       data-theme="phosphor"
-      className={`${jetbrains.variable} ${dancingScript.variable} ${specialElite.variable}`}
+      className={`${jetbrains.variable} ${caveat.variable} ${specialElite.variable}`}
     >
       <head>
         <script
