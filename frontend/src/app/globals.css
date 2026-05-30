@@ -440,6 +440,8 @@ button, input, textarea, select { font: inherit; color: inherit; }
 
 .diary-head {
   padding: 18px 32px 12px 76px;
+  padding-top: max(18px, env(safe-area-inset-top, 18px));
+  padding-right: max(32px, env(safe-area-inset-right, 0px));
   border-bottom: 1px dashed var(--rule-ink);
   display: flex;
   align-items: baseline;
@@ -834,7 +836,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
 
   .feed { padding: 10px 14px 8px; }
 
-  .diary-head { padding: 14px 18px 10px 60px; gap: 12px; }
+  .diary-head { padding: 14px 18px 10px 60px; padding-top: max(14px, env(safe-area-inset-top, 14px)); padding-right: max(18px, env(safe-area-inset-right, 0px)); gap: 12px; }
   .diary-surface { padding: 14px 20px 20px 72px; }
   .diary-surface::before { left: 48px; }
   .diary-surface::after  { left: 52px; }
