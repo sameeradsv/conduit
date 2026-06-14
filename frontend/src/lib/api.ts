@@ -53,6 +53,7 @@ export type ModelId = (typeof MODELS)[number]["id"];
 export interface ConfirmationItem {
   tool: string;
   success: boolean;
+  error?: string | null;
 }
 
 export type WakeupEvent =

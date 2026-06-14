@@ -174,7 +174,8 @@ async def stream_agent_chat(
             result_str = await execute_tool(name, args, sibling_token)
             result_data = json.loads(result_str)
             if diary:
-                confirmations.append({"tool": name, "success": "error" not in result_data})
+                err = result_data.get("error")
+                confirmations.append({"tool": name, "success": not err, "error": err})
             else:
                 groq_messages.append({
                     "role": "tool",
@@ -218,7 +219,8 @@ async def stream_agent_chat(
             success = "error" not in result_data
 
             if diary:
-                confirmations.append({"tool": tc.function.name, "success": success})
+                err = result_data.get("error")
+                confirmations.append({"tool": tc.function.name, "success": not err, "error": err})
             else:
                 groq_messages.append({
                     "role": "tool",

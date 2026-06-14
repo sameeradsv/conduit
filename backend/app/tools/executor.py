@@ -219,7 +219,11 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
                 return json.dumps({"error": f"unknown tool: {name}"})
 
     except httpx.HTTPStatusError as e:
-        return json.dumps({"error": f"{name} returned HTTP {e.response.status_code}"})
+        try:
+            detail = e.response.json()
+        except Exception:
+            detail = e.response.text[:200]
+        return json.dumps({"error": f"{name} HTTP {e.response.status_code}: {detail}"})
     except httpx.ConnectError:
         app_name = name.split("_")[1] if "_" in name else name
         return json.dumps({"error": f"could not connect to {app_name} — is it running?"})

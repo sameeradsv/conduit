@@ -63,16 +63,20 @@ const TOOL_APP: Record<string, string> = {
 function formatConfirmation(results: ConfirmationItem[]): string {
   if (results.length === 0)
     return "~ nothing detected — no tasks, interactions, or meals found in that entry";
-  const counts: Record<string, { n: number; ok: boolean }> = {};
+  const counts: Record<string, { n: number; ok: boolean; errors: string[] }> = {};
   for (const r of results) {
-    if (!counts[r.tool]) counts[r.tool] = { n: 0, ok: true };
+    if (!counts[r.tool]) counts[r.tool] = { n: 0, ok: true, errors: [] };
     counts[r.tool].n++;
-    if (!r.success) counts[r.tool].ok = false;
+    if (!r.success) {
+      counts[r.tool].ok = false;
+      if (r.error) counts[r.tool].errors.push(r.error);
+    }
   }
   return Object.entries(counts)
-    .map(([tool, { n, ok }]) => {
+    .map(([tool, { n, ok, errors }]) => {
       const app = (TOOL_APP[tool] ?? tool).padEnd(10);
-      return `${ok ? "✓" : "✗"}  ${app}${tool} × ${n}`;
+      const line = `${ok ? "✓" : "✗"}  ${app}${tool} × ${n}`;
+      return errors.length ? `${line}\n    ! ${errors[0]}` : line;
     })
     .join("\n");
 }
