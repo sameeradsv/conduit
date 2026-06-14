@@ -14,6 +14,12 @@ function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function offsetDate(dateStr: string, days: number) {
+  const d = new Date(dateStr + "T12:00:00");
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 function formatDateLabel(dateStr: string) {
   const d = new Date(dateStr + "T12:00:00");
   return d.toLocaleDateString("en-US", {
@@ -26,19 +32,9 @@ function formatDateLabel(dateStr: string) {
 
 const HOLES = 7;
 
-const DIARY_FONTS = [
-  { label: "Kalam",         cssVar: "--font-kalam" },
-  { label: "Caveat",        cssVar: "--font-caveat" },
-  { label: "Indie Flower",  cssVar: "--font-indie-flower" },
-  { label: "Dancing Script",cssVar: "--font-dancing-script" },
-  { label: "Patrick Hand",  cssVar: "--font-patrick-hand" },
-  { label: "Special Elite", cssVar: "--font-special-elite" },
-] as const;
-
 export function DiaryCompose({ onSend, onAbort, onBack, disabled, streaming }: Props) {
   const [value, setValue] = useState("");
   const [entryDate, setEntryDate] = useState(todayStr);
-  const [fontVar, setFontVar] = useState("--font-kalam");
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -47,7 +43,9 @@ export function DiaryCompose({ onSend, onAbort, onBack, disabled, streaming }: P
     textareaRef.current?.focus();
   }, []);
 
-  const isPast = entryDate !== todayStr();
+  const today = todayStr();
+  const isPast = entryDate !== today;
+  const isToday = entryDate === today;
 
   const submit = useCallback(() => {
     const trimmed = value.trim();
@@ -95,30 +93,32 @@ export function DiaryCompose({ onSend, onAbort, onBack, disabled, streaming }: P
         <button className="diary-back" onClick={onBack} aria-label="Exit diary mode">
           ← back
         </button>
-        <div className="diary-font-picker" aria-label="Font preview">
-          {DIARY_FONTS.map((f) => (
-            <button
-              key={f.cssVar}
-              className={`diary-font-btn${fontVar === f.cssVar ? " active" : ""}`}
-              style={{ fontFamily: `var(${f.cssVar}), cursive` }}
-              onClick={() => setFontVar(f.cssVar)}
-              title={f.label}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
         <div className="diary-date-wrap" title="Click to change date">
+          <button
+            className="diary-nav-btn"
+            onClick={() => setEntryDate((d) => offsetDate(d, -1))}
+            aria-label="Previous day"
+          >
+            ‹
+          </button>
           <span className={`date${isPast ? " past" : ""}`}>
             {formatDateLabel(entryDate)}
           </span>
           {isPast && <span className="diary-past-badge">past entry</span>}
+          <button
+            className="diary-nav-btn"
+            onClick={() => setEntryDate((d) => offsetDate(d, 1))}
+            disabled={isToday}
+            aria-label="Next day"
+          >
+            ›
+          </button>
           <input
             ref={dateInputRef}
             type="date"
             className="diary-date-input"
             value={entryDate}
-            max={todayStr()}
+            max={today}
             onChange={(e) => {
               if (e.target.value) setEntryDate(e.target.value);
             }}
@@ -132,7 +132,6 @@ export function DiaryCompose({ onSend, onAbort, onBack, disabled, streaming }: P
         <textarea
           ref={textareaRef}
           className="diary-text"
-          style={{ fontFamily: `var(${fontVar}), cursive` }}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}

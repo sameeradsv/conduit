@@ -58,7 +58,7 @@
   --lh:     1.45;
   --pad-x:  18px;
   --font:   var(--font-jetbrains, "JetBrains Mono"), ui-monospace, SFMono-Regular, Menlo, monospace;
-  --hand:   var(--font-kalam, "Kalam"), cursive;
+  --hand:   var(--font-dancing-script, "Dancing Script"), cursive;
   --type:   var(--font-special-elite, "Special Elite"), "Courier New", monospace;
 }
 
@@ -465,35 +465,30 @@ button, input, textarea, select { font: inherit; color: inherit; }
 }
 .diary-back:hover { color: var(--pen); opacity: 1; }
 
-.diary-font-picker {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-left: auto;
-}
-.diary-font-btn {
-  background: transparent;
-  border: 1px solid var(--paper-edge);
-  border-radius: 3px;
-  color: var(--pen-soft);
-  cursor: pointer;
-  font-size: 12px;
-  padding: 2px 7px;
-  line-height: 1.4;
-  opacity: 0.65;
-  transition: opacity 0.15s, color 0.15s, border-color 0.15s;
-}
-.diary-font-btn:hover { opacity: 0.9; color: var(--pen); }
-.diary-font-btn.active { opacity: 1; color: var(--pen); border-color: var(--pen-soft); }
 
 .diary-date-wrap {
   position: relative;
   display: inline-flex;
-  align-items: baseline;
-  gap: 10px;
+  align-items: center;
+  gap: 8px;
   cursor: pointer;
 }
+.diary-nav-btn {
+  background: transparent;
+  border: 0;
+  color: var(--pen-soft);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 2px;
+  opacity: 0.6;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+.diary-nav-btn:hover:not(:disabled) { opacity: 1; color: var(--pen); }
+.diary-nav-btn:disabled { opacity: 0.2; cursor: default; }
 .diary-date-wrap:hover .date { opacity: 0.75; }
 .diary-date-input {
   position: absolute;
