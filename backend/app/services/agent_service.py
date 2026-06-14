@@ -54,6 +54,10 @@ _TOOL_CALL_MODELS = {
     "llama-3.1-70b-versatile",
 }
 
+# Diary mode always routes silently via tool calls — use the most reliable
+# tool-call model regardless of the user's selected chat model.
+_DIARY_MODEL = "llama-3.3-70b-versatile"
+
 
 def _client() -> AsyncGroq:
     api_key = os.getenv("GROQ_API_KEY")
@@ -92,9 +96,10 @@ async def stream_agent_chat(
 
     groq_messages = _build_messages(messages, system)
 
-    use_tools = model in _TOOL_CALL_MODELS
+    effective_model = _DIARY_MODEL if diary else model
+    use_tools = effective_model in _TOOL_CALL_MODELS
     create_kwargs: dict = dict(
-        model=model,
+        model=effective_model,
         messages=groq_messages,
         max_tokens=max_tokens,
         temperature=temperature,
@@ -102,7 +107,7 @@ async def stream_agent_chat(
     )
     if use_tools:
         create_kwargs["tools"] = tools
-        create_kwargs["tool_choice"] = "auto"
+        create_kwargs["tool_choice"] = "required" if diary else "auto"
 
     response = await client.chat.completions.create(**create_kwargs)
     choice = response.choices[0]
@@ -151,7 +156,7 @@ async def stream_agent_chat(
             yield {"confirmation": confirmations}
         else:
             stream = await client.chat.completions.create(
-                model=model,
+                model=effective_model,
                 messages=groq_messages,
                 max_tokens=max_tokens,
                 temperature=temperature,
