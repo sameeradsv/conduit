@@ -197,7 +197,7 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
 
             elif name == "log_meal":
                 payload = {"decision": args["decision"]}
-                for field in ("recipe_name", "cuisine"):
+                for field in ("recipe_name", "cuisine", "timestamp"):
                     if args.get(field) is not None:
                         payload[field] = args[field]
                 if args.get("satisfaction") is not None:

@@ -207,7 +207,7 @@ WRITE_TOOLS = [
                     },
                     "occurred_at": {
                         "type": "string",
-                        "description": "ISO 8601 datetime when it happened (omit for now)",
+                        "description": "ISO 8601 datetime when it happened — set from [Entry date] prefix for past entries, omit for today",
                     },
                 },
                 "required": ["observation"],
@@ -240,6 +240,10 @@ WRITE_TOOLS = [
                     "satisfaction": {
                         "type": "integer",
                         "description": "Satisfaction rating 1–5",
+                    },
+                    "timestamp": {
+                        "type": "string",
+                        "description": "ISO 8601 datetime when the meal occurred — set from [Entry date] prefix for past entries",
                     },
                 },
                 "required": ["decision"],

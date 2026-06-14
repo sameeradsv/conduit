@@ -52,7 +52,7 @@ export function DiaryCompose({ onSend, onAbort, onBack, disabled, streaming }: P
     if (!trimmed || streaming) return;
     setSaveStatus("saving…");
     const text = isPast
-      ? `[Entry for: ${formatDateLabel(entryDate)}]\n\n${trimmed}`
+      ? `[Entry date: ${entryDate}]\n\n${trimmed}`
       : trimmed;
     onSend(text);
     setValue("");
