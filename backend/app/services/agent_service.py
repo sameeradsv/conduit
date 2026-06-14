@@ -1,8 +1,9 @@
 import json
 import os
+import re
 from typing import AsyncIterator, Optional
 
-from groq import AsyncGroq
+from groq import AsyncGroq, APIStatusError
 
 from app.schemas import ChatMessage
 from app.tools.definitions import READ_TOOLS, WRITE_TOOLS, SCOPE_TOOLS
@@ -58,6 +59,10 @@ _TOOL_CALL_MODELS = {
 # tool-call model regardless of the user's selected chat model.
 _DIARY_MODEL = "llama-3.3-70b-versatile"
 
+# Matches the old Llama text-format function call that Groq sometimes generates
+# instead of a structured tool call: <function=name>{...}</function>
+_FUNC_RE = re.compile(r"<function=(\w+)>(.*?)</function>", re.DOTALL)
+
 
 def _client() -> AsyncGroq:
     api_key = os.getenv("GROQ_API_KEY")
@@ -72,6 +77,34 @@ def _build_messages(messages: list[ChatMessage], system: str) -> list[dict]:
         raw[0]["content"] = f"{system}\n\n{raw[0]['content']}"
         return raw
     return [{"role": "system", "content": system}] + raw
+
+
+def _parse_failed_generation(body: dict) -> list[dict]:
+    """
+    Parse tool calls from Groq's failed_generation field.
+    The model sometimes produces <function=name>{args}</function> text instead of
+    a structured tool call; Groq rejects it with 400/tool_use_failed, but the
+    args are still usable if we extract them ourselves.
+    """
+    fg = (body.get("error") or {}).get("failed_generation", "")
+    calls = []
+    for name, args_str in _FUNC_RE.findall(fg):
+        try:
+            args = json.loads(args_str)
+        except json.JSONDecodeError:
+            continue
+        calls.append({"name": name, "args": args})
+    return calls
+
+
+def _coerce_args(name: str, args: dict) -> dict:
+    """Fix known type mismatches that models produce against our schemas."""
+    if name == "log_meal" and "satisfaction" in args:
+        try:
+            args["satisfaction"] = int(args["satisfaction"])
+        except (ValueError, TypeError):
+            args.pop("satisfaction", None)
+    return args
 
 
 async def stream_agent_chat(
@@ -111,8 +144,38 @@ async def stream_agent_chat(
         if diary:
             create_kwargs["parallel_tool_calls"] = False
 
-    response = await client.chat.completions.create(**create_kwargs)
-    choice = response.choices[0]
+    # Attempt the structured tool call; fall back to parsing failed_generation
+    # when Groq rejects the model's text-format function call (400/tool_use_failed).
+    try:
+        response = await client.chat.completions.create(**create_kwargs)
+        choice = response.choices[0]
+    except APIStatusError as exc:
+        if exc.status_code != 400:
+            raise
+        body = exc.body if isinstance(exc.body, dict) else {}
+        if (body.get("error") or {}).get("code") != "tool_use_failed":
+            raise
+        parsed = _parse_failed_generation(body)
+        if not parsed:
+            raise
+        # Execute the recovered tool calls directly
+        confirmations = []
+        for tc in parsed:
+            name, args = tc["name"], _coerce_args(tc["name"], tc["args"])
+            yield {"status": "calling_tool", "tool": name}
+            result_str = await execute_tool(name, args, sibling_token)
+            result_data = json.loads(result_str)
+            if diary:
+                confirmations.append({"tool": name, "success": "error" not in result_data})
+            else:
+                groq_messages.append({
+                    "role": "tool",
+                    "tool_call_id": f"fallback_{name}",
+                    "content": result_str,
+                })
+        if diary:
+            yield {"confirmation": confirmations}
+        return
 
     if use_tools and choice.finish_reason == "tool_calls":
         tool_calls = choice.message.tool_calls
@@ -141,6 +204,7 @@ async def stream_agent_chat(
                 args = json.loads(tc.function.arguments or "{}")
             except json.JSONDecodeError:
                 args = {}
+            args = _coerce_args(tc.function.name, args)
             result_str = await execute_tool(tc.function.name, args, sibling_token)
             result_data = json.loads(result_str)
             success = "error" not in result_data
