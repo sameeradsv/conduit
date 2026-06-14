@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { JetBrains_Mono, Kalam, Special_Elite } from "next/font/google";
+import { JetBrains_Mono, Kalam, Special_Elite, Caveat, Indie_Flower, Dancing_Script, Patrick_Hand } from "next/font/google";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SWRegistrar } from "@/components/SWRegistrar";
@@ -23,6 +23,34 @@ const specialElite = Special_Elite({
   subsets: ["latin"],
   weight: ["400"],
   variable: "--font-special-elite",
+  display: "swap",
+});
+
+const caveat = Caveat({
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+  variable: "--font-caveat",
+  display: "swap",
+});
+
+const indieFlower = Indie_Flower({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-indie-flower",
+  display: "swap",
+});
+
+const dancingScript = Dancing_Script({
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+  variable: "--font-dancing-script",
+  display: "swap",
+});
+
+const patrickHand = Patrick_Hand({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-patrick-hand",
   display: "swap",
 });
 
@@ -67,7 +95,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       data-theme="phosphor"
-      className={`${jetbrains.variable} ${kalam.variable} ${specialElite.variable}`}
+      className={`${jetbrains.variable} ${kalam.variable} ${specialElite.variable} ${caveat.variable} ${indieFlower.variable} ${dancingScript.variable} ${patrickHand.variable}`}
     >
       <head>
         <script

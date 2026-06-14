@@ -26,9 +26,19 @@ function formatDateLabel(dateStr: string) {
 
 const HOLES = 7;
 
+const DIARY_FONTS = [
+  { label: "Kalam",         cssVar: "--font-kalam" },
+  { label: "Caveat",        cssVar: "--font-caveat" },
+  { label: "Indie Flower",  cssVar: "--font-indie-flower" },
+  { label: "Dancing Script",cssVar: "--font-dancing-script" },
+  { label: "Patrick Hand",  cssVar: "--font-patrick-hand" },
+  { label: "Special Elite", cssVar: "--font-special-elite" },
+] as const;
+
 export function DiaryCompose({ onSend, onAbort, onBack, disabled, streaming }: Props) {
   const [value, setValue] = useState("");
   const [entryDate, setEntryDate] = useState(todayStr);
+  const [fontVar, setFontVar] = useState("--font-kalam");
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -85,6 +95,19 @@ export function DiaryCompose({ onSend, onAbort, onBack, disabled, streaming }: P
         <button className="diary-back" onClick={onBack} aria-label="Exit diary mode">
           ← back
         </button>
+        <div className="diary-font-picker" aria-label="Font preview">
+          {DIARY_FONTS.map((f) => (
+            <button
+              key={f.cssVar}
+              className={`diary-font-btn${fontVar === f.cssVar ? " active" : ""}`}
+              style={{ fontFamily: `var(${f.cssVar}), cursive` }}
+              onClick={() => setFontVar(f.cssVar)}
+              title={f.label}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
         <div className="diary-date-wrap" title="Click to change date">
           <span className={`date${isPast ? " past" : ""}`}>
             {formatDateLabel(entryDate)}
@@ -109,6 +132,7 @@ export function DiaryCompose({ onSend, onAbort, onBack, disabled, streaming }: P
         <textarea
           ref={textareaRef}
           className="diary-text"
+          style={{ fontFamily: `var(${fontVar}), cursive` }}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}

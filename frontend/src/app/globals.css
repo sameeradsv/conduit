@@ -444,7 +444,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
   padding-right: max(32px, env(safe-area-inset-right, 0px));
   border-bottom: 1px dashed var(--rule-ink);
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 18px;
   flex-shrink: 0;
   position: relative;
@@ -464,6 +464,28 @@ button, input, textarea, select { font: inherit; color: inherit; }
   opacity: 0.7;
 }
 .diary-back:hover { color: var(--pen); opacity: 1; }
+
+.diary-font-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+.diary-font-btn {
+  background: transparent;
+  border: 1px solid var(--paper-edge);
+  border-radius: 3px;
+  color: var(--pen-soft);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 7px;
+  line-height: 1.4;
+  opacity: 0.65;
+  transition: opacity 0.15s, color 0.15s, border-color 0.15s;
+}
+.diary-font-btn:hover { opacity: 0.9; color: var(--pen); }
+.diary-font-btn.active { opacity: 1; color: var(--pen); border-color: var(--pen-soft); }
 
 .diary-date-wrap {
   position: relative;
