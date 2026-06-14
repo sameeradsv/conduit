@@ -108,6 +108,8 @@ async def stream_agent_chat(
     if use_tools:
         create_kwargs["tools"] = tools
         create_kwargs["tool_choice"] = "required" if diary else "auto"
+        if diary:
+            create_kwargs["parallel_tool_calls"] = False
 
     response = await client.chat.completions.create(**create_kwargs)
     choice = response.choices[0]

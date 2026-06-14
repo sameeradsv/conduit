@@ -197,9 +197,11 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
 
             elif name == "log_meal":
                 payload = {"decision": args["decision"]}
-                for field in ("recipe_name", "cuisine", "satisfaction"):
+                for field in ("recipe_name", "cuisine"):
                     if args.get(field) is not None:
                         payload[field] = args[field]
+                if args.get("satisfaction") is not None:
+                    payload["satisfaction"] = int(args["satisfaction"])
                 r = await client.post(f"{settings.chef_url}/history", json=payload, headers=h)
                 r.raise_for_status()
                 return json.dumps({"saved": True})
