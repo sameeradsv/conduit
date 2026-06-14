@@ -30,8 +30,9 @@ _DIARY_SYSTEM = (
     "- Meals, food, what was eaten/cooked/ordered → log_meal (one call per meal)\n"
     "Call multiple tools when multiple items are present. Extract all available detail.\n"
     "Date handling: if the entry starts with [Entry date: YYYY-MM-DD], that is the date the events "
-    "occurred. Set occurred_at to YYYY-MM-DDT12:00:00 for log_interaction and timestamp to "
-    "YYYY-MM-DDT12:00:00 for log_meal. Omit these fields for today's entries."
+    "occurred. Set occurred_at to YYYY-MM-DDT12:00:00 for log_interaction and create_task, and "
+    "timestamp to YYYY-MM-DDT12:00:00 for log_meal. Also set completed=true on create_task for "
+    "past entries unless the text implies it is still pending. Omit date fields for today's entries."
 )
 
 _SCOPE_SYSTEMS: dict[str, str] = {

@@ -167,6 +167,14 @@ WRITE_TOOLS = [
                         "type": "number",
                         "description": "Importance 0.0–1.0 (1.0 = critical)",
                     },
+                    "completed": {
+                        "type": "boolean",
+                        "description": "True if the task was already done — use for retroactive logging",
+                    },
+                    "occurred_at": {
+                        "type": "string",
+                        "description": "ISO 8601 datetime when the task was worked on — set from [Entry date] prefix for past entries, omit for today",
+                    },
                 },
                 "required": ["text"],
             },

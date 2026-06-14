@@ -1,5 +1,6 @@
 import asyncio
 import json
+from datetime import datetime, timezone
 from typing import Optional
 
 import httpx
@@ -152,9 +153,17 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
             # ── Write tools ───────────────────────────────────────────
             elif name == "create_task":
                 payload: dict = {"text": args["text"]}
-                for field in ("tag", "effort", "urgency", "importance"):
+                for field in ("tag", "effort", "urgency", "importance", "completed"):
                     if args.get(field) is not None:
                         payload[field] = args[field]
+                if args.get("occurred_at"):
+                    try:
+                        dt = datetime.fromisoformat(args["occurred_at"].replace("Z", "+00:00"))
+                        epoch_ms = int(dt.astimezone(timezone.utc).timestamp() * 1000)
+                        payload["scheduled_at"] = epoch_ms
+                        payload["client_created_at"] = epoch_ms
+                    except ValueError:
+                        pass
                 r = await client.post(f"{settings.circuit_url}/api/tasks", json=payload, headers=h)
                 r.raise_for_status()
                 task = r.json()
