@@ -10,10 +10,26 @@ interface Props {
   placeholder?: string;
 }
 
+const SLASH_COMMANDS = [
+  { cmd: "/help",           desc: "show available commands" },
+  { cmd: "/models",         desc: "list available models" },
+  { cmd: "/model ",         desc: "switch model  e.g. /model llama-3.1-8b-instant" },
+  { cmd: "/system ",        desc: "set system prompt" },
+  { cmd: "/chat",           desc: "switch to direct chat mode" },
+  { cmd: "/agent",          desc: "toggle agent mode (circuit · canopy · chef)" },
+  { cmd: "/diary",          desc: "toggle diary mode (silent routing)" },
+  { cmd: "/digest",         desc: "fetch daily briefing from all apps" },
+  { cmd: "/wakeup",         desc: "ping circuit, canopy, chef to wake from idle" },
+  { cmd: "/passkey",        desc: "enable biometric sign-in on this device" },
+  { cmd: "/clear",          desc: "clear chat history" },
+  { cmd: "/logout",         desc: "sign out" },
+] as const;
+
 export function CommandInput({ onSend, onAbort, disabled, streaming, placeholder }: Props) {
   const [value, setValue] = useState("");
   const [history, setHistory] = useState<string[]>([]);
   const [historyIdx, setHistoryIdx] = useState(-1);
+  const [suggIdx, setSuggIdx] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -27,6 +43,12 @@ export function CommandInput({ onSend, onAbort, disabled, streaming, placeholder
     ta.style.height = `${Math.min(ta.scrollHeight, 200)}px`;
   }, [value]);
 
+  const suggestions = value.startsWith("/")
+    ? SLASH_COMMANDS.filter((c) => c.cmd.startsWith(value) || value === "/")
+    : [];
+
+  const hasSugg = suggestions.length > 0;
+
   const submit = useCallback(() => {
     if (!value.trim()) return;
     setHistory((prev) => [value, ...prev.slice(0, 99)]);
@@ -37,6 +59,31 @@ export function CommandInput({ onSend, onAbort, disabled, streaming, placeholder
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (hasSugg) {
+        if (e.key === "ArrowUp") {
+          e.preventDefault();
+          setSuggIdx((i) => Math.max(0, i - 1));
+          return;
+        }
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          setSuggIdx((i) => Math.min(suggestions.length - 1, i + 1));
+          return;
+        }
+        if (e.key === "Enter" || e.key === "Tab") {
+          e.preventDefault();
+          const chosen = suggestions[suggIdx]?.cmd ?? suggestions[0]?.cmd;
+          if (chosen) setValue(chosen);
+          setSuggIdx(0);
+          return;
+        }
+        if (e.key === "Escape") {
+          e.preventDefault();
+          setValue("");
+          return;
+        }
+      }
+
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         submit();
@@ -62,18 +109,44 @@ export function CommandInput({ onSend, onAbort, disabled, streaming, placeholder
         return;
       }
     },
-    [value, historyIdx, history, submit, onSend],
+    [value, historyIdx, history, submit, onSend, hasSugg, suggestions, suggIdx],
   );
+
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setValue(e.target.value);
+    setSuggIdx(0);
+  }, []);
 
   return (
     <div className="composer">
+      {hasSugg && (
+        <ul className="slash-menu" role="listbox">
+          {suggestions.map((s, i) => (
+            <li
+              key={s.cmd}
+              role="option"
+              aria-selected={i === suggIdx}
+              className={i === suggIdx ? "active" : ""}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                setValue(s.cmd);
+                setSuggIdx(0);
+                textareaRef.current?.focus();
+              }}
+            >
+              <span className="slash-cmd">{s.cmd.trimEnd()}</span>
+              <span className="slash-desc">{s.desc}</span>
+            </li>
+          ))}
+        </ul>
+      )}
       <div className="input-row">
         <span className="prompt-glyph">&gt;</span>
         <textarea
           ref={textareaRef}
           className="input"
           value={value}
-          onChange={(e) => setValue(e.target.value)}
+          onChange={handleChange}
           onKeyDown={handleKeyDown}
           placeholder={
             streaming
@@ -97,6 +170,7 @@ export function CommandInput({ onSend, onAbort, disabled, streaming, placeholder
             <span><kbd>⇧↵</kbd>newline</span>
             <span><kbd>/</kbd>commands</span>
             <span><kbd>@</kbd>route to app</span>
+            <span><kbd>↑↓</kbd>history</span>
           </>
         )}
       </div>
