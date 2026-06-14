@@ -67,9 +67,11 @@ _TOOL_CALL_MODELS = {
 # tool-call model regardless of the user's selected chat model.
 _DIARY_MODEL = "llama-3.3-70b-versatile"
 
-# Matches the old Llama text-format function call that Groq sometimes generates
-# instead of a structured tool call: <function=name>{...}</function>
-_FUNC_RE = re.compile(r"<function=(\w+)>(.*?)</function>", re.DOTALL)
+# Matches the old Llama text-format function call that Groq sometimes generates.
+# The model produces several variants: <function=name>{}, <function=name>{},
+# <function=name={}> — so we accept any non-{ characters between name and args
+# and make the closing tag optional.
+_FUNC_RE = re.compile(r"<function=(\w+)[^{]*(\{.*?\})\s*(?:</function>)?", re.DOTALL)
 
 
 def _client() -> AsyncGroq:
