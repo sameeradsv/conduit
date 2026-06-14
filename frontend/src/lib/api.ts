@@ -90,11 +90,12 @@ export async function* streamAgentChat(
   onToolCall?: (tool: string) => void,
   onConfirmation?: (results: ConfirmationItem[]) => void,
   diary?: boolean,
+  scope?: string,
 ): AsyncGenerator<string> {
   const res = await fetch(apiUrl("/api/agent/chat"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages, model, sibling_token: siblingToken, diary: diary ?? false }),
+    body: JSON.stringify({ messages, model, sibling_token: siblingToken, diary: diary ?? false, scope }),
     signal,
   });
 

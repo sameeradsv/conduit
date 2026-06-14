@@ -23,6 +23,18 @@ import type { UIMessage } from "./MessageRow";
 
 type ChatMode = "chat" | "agent" | "diary";
 
+const APP_SCOPES = ["circuit", "canopy", "chef"] as const;
+type AppScope = typeof APP_SCOPES[number];
+
+function detectScope(text: string): { scope: AppScope; body: string } | null {
+  for (const scope of APP_SCOPES) {
+    if (text.toLowerCase().startsWith(`@${scope}`)) {
+      return { scope, body: text.slice(scope.length + 1).trim() };
+    }
+  }
+  return null;
+}
+
 const DEFAULT_SYSTEM = "You are a helpful assistant. Be concise and direct.";
 
 const HELP_TEXT = `conduit — available commands:
@@ -319,6 +331,57 @@ export function TerminalShell() {
             role: "system",
             content: `! unknown command: ${trimmed}. try /help`,
           });
+        }
+        return;
+      }
+
+      const scoped = detectScope(trimmed);
+      if (scoped) {
+        addMsg({ role: "user", content: trimmed });
+        setStatus("streaming");
+        const scopedHistory: Message[] = [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: scoped.body },
+        ];
+        const siblingToken =
+          typeof window !== "undefined"
+            ? localStorage.getItem("conduit_auth_token")
+            : null;
+        abortRef.current = new AbortController();
+        const aiId = addMsg({ role: "assistant", content: "", streaming: true });
+        let fullContent = "";
+        try {
+          for await (const chunk of streamAgentChat(
+            scopedHistory,
+            model,
+            siblingToken,
+            abortRef.current.signal,
+            (tool) => addSystem(`~ querying ${tool.replace(/_/g, " ")}...`),
+            undefined,
+            false,
+            scoped.scope,
+          )) {
+            fullContent += chunk;
+            setMessages((prev) =>
+              prev.map((m) => (m.id === aiId ? { ...m, content: fullContent } : m)),
+            );
+            setTokenCount((n) => n + 1);
+          }
+          setMessages((prev) =>
+            prev.map((m) => (m.id === aiId ? { ...m, streaming: false } : m)),
+          );
+          setStatus("ready");
+        } catch (err: unknown) {
+          const isAbort = err instanceof Error && err.name === "AbortError";
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === aiId
+                ? { ...m, content: isAbort ? fullContent || "(cancelled)" : `! ${err instanceof Error ? err.message : "unknown error"}`, streaming: false }
+                : m,
+            ),
+          );
+          setStatus(isAbort ? "ready" : "error");
+          if (!isAbort) setTimeout(() => setStatus("ready"), 3000);
         }
         return;
       }
