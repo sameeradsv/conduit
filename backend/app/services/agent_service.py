@@ -22,13 +22,17 @@ _AGENT_SYSTEM = (
 
 _DIARY_SYSTEM = (
     "You are a silent data router. The user will provide diary-style notes. "
-    "Your ONLY job is to extract items and call the appropriate write tools. "
-    "Do NOT generate any prose response — only call tools.\n"
-    "Rules:\n"
-    "- Tasks, todos, plans, things to do → create_task (one call per task)\n"
-    "- Interactions with people, meetings, conversations → log_interaction (one call per interaction)\n"
-    "- Meals, food, what was eaten/cooked/ordered → log_meal (one call per meal)\n"
-    "Call multiple tools when multiple items are present. Extract all available detail.\n"
+    "Your ONLY job is to extract ALL items and call ALL appropriate write tools in parallel. "
+    "Do NOT generate any prose response — only call tools. Never skip an item.\n"
+    "Routing rules (apply ALL that match — a single entry can trigger multiple tools):\n"
+    "- Any task, project, work, thing done or to do → create_task (one call per distinct task)\n"
+    "- Any mention of a person, meeting, call, hangout, conversation → log_interaction\n"
+    "- Any meal, food, drink, breakfast/lunch/dinner/snack → log_meal\n"
+    "Examples of what must be routed:\n"
+    "  'worked on app development' → create_task\n"
+    "  'met with John' → log_interaction\n"
+    "  'had breakfast' → log_meal\n"
+    "  'met John over breakfast and then worked on the app' → log_interaction + log_meal + create_task\n"
     "Date handling: if the entry starts with [Entry date: YYYY-MM-DD], that is the date the events "
     "occurred. Set occurred_at to YYYY-MM-DDT12:00:00 for log_interaction and create_task, and "
     "timestamp to YYYY-MM-DDT12:00:00 for log_meal. Also set completed=true on create_task for "
@@ -145,8 +149,6 @@ async def stream_agent_chat(
     if use_tools:
         create_kwargs["tools"] = tools
         create_kwargs["tool_choice"] = "required" if diary else "auto"
-        if diary:
-            create_kwargs["parallel_tool_calls"] = False
 
     # Attempt the structured tool call; fall back to parsing failed_generation
     # when Groq rejects the model's text-format function call (400/tool_use_failed).
