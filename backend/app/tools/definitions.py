@@ -2,6 +2,19 @@ READ_TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "get_energy",
+            "description": (
+                "Fetch the user's current energy / battery level by aggregating data from "
+                "all three apps: Circuit (task load and stress), Canopy (social drain), "
+                "and Chef (meal energy). Use for questions like 'what is my energy right now', "
+                "'how am I doing', 'am I drained', 'what's my battery level'."
+            ),
+            "parameters": {"type": "object", "properties": {}, "required": []},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "get_my_tasks",
             "description": (
                 "Fetch the user's tasks from Circuit (task management app). "

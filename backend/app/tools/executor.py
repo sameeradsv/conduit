@@ -1,3 +1,4 @@
+import asyncio
 import json
 from typing import Optional
 
@@ -43,7 +44,52 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
     try:
         async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
             # ── Read tools ────────────────────────────────────────────
-            if name == "get_my_tasks":
+            if name == "get_energy":
+                async def _safe_get(url: str) -> dict | None:
+                    try:
+                        r = await client.get(url, headers=h)
+                        return r.json() if r.status_code == 200 else None
+                    except Exception:
+                        return None
+
+                circuit_data, canopy_data, chef_data = await asyncio.gather(
+                    _safe_get(f"{settings.circuit_url}/api/energy/sync"),
+                    _safe_get(f"{settings.canopy_url}/sync/energy"),
+                    _safe_get(f"{settings.chef_url}/energy/timeline"),
+                )
+
+                result: dict = {}
+                if circuit_data:
+                    result["tasks"] = {
+                        "energy_so_far": circuit_data.get("energy_so_far"),
+                        "energy_ahead": circuit_data.get("energy_ahead"),
+                        "manual_energy": circuit_data.get("manual_energy"),
+                        "stress_level": circuit_data.get("stress_level"),
+                        "tasks_done_today": circuit_data.get("events_so_far"),
+                    }
+                if canopy_data:
+                    result["social"] = {
+                        "energy_so_far": canopy_data.get("energy_so_far"),
+                        "interactions_today": canopy_data.get("interactions_so_far"),
+                    }
+                if chef_data:
+                    result["meals"] = {
+                        "avg_energy": chef_data.get("avg_energy"),
+                        "meals_today": len(chef_data.get("events", [])),
+                    }
+
+                energies = [v for v in [
+                    circuit_data.get("manual_energy") if circuit_data else None,
+                    circuit_data.get("energy_so_far") if circuit_data else None,
+                    canopy_data.get("energy_so_far") if canopy_data else None,
+                    chef_data.get("avg_energy") if chef_data else None,
+                ] if v is not None]
+                if energies:
+                    result["estimated_energy"] = round(sum(energies) / len(energies), 3)
+
+                return json.dumps(result)
+
+            elif name == "get_my_tasks":
                 r = await client.get(f"{settings.circuit_url}/api/tasks", headers=h)
                 r.raise_for_status()
                 return json.dumps(_trim_tasks(r.json()))
