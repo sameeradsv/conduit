@@ -21,7 +21,7 @@ async def wakeup() -> StreamingResponse:
     """Ping all sibling health endpoints in parallel; stream SSE results as each responds."""
 
     targets = [
-        ("circuit", f"{settings.circuit_url}/api/health"),
+        ("circuit", f"{settings.circuit_url}/health"),
         ("canopy",  f"{settings.canopy_url}/api/health"),
         ("chef",    f"{settings.chef_url}/health"),
     ]
