@@ -12,11 +12,8 @@ from app.config import settings
 
 router = APIRouter()
 
-_TARGETS = [
-    ("circuit", "{circuit_url}/api/health"),
-    ("canopy",  "{canopy_url}/api/health"),
-    ("chef",    "{chef_url}/health"),
-]
+_TIMEOUT = 90.0
+_RETRY_INTERVAL = 10.0
 
 
 @router.get("/api/wakeup")
@@ -31,13 +28,17 @@ async def wakeup() -> StreamingResponse:
 
     async def ping(name: str, url: str) -> dict:
         start = time.monotonic()
-        try:
-            async with httpx.AsyncClient(timeout=90.0) as client:
-                r = await client.get(url)
-            ok = r.status_code < 400
-        except Exception:
-            ok = False
-        return {"app": name, "ok": ok, "elapsed": round(time.monotonic() - start, 1)}
+        async with httpx.AsyncClient(timeout=_RETRY_INTERVAL) as client:
+            while True:
+                try:
+                    r = await client.get(url)
+                    if r.status_code < 400:
+                        return {"app": name, "ok": True, "elapsed": round(time.monotonic() - start, 1)}
+                except Exception:
+                    pass
+                if time.monotonic() - start >= _TIMEOUT:
+                    return {"app": name, "ok": False, "elapsed": round(time.monotonic() - start, 1)}
+                await asyncio.sleep(_RETRY_INTERVAL)
 
     async def generate():
         tasks = [asyncio.create_task(ping(name, url)) for name, url in targets]
