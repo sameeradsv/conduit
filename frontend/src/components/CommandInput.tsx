@@ -70,12 +70,23 @@ export function CommandInput({ onSend, onAbort, disabled, streaming, placeholder
           setSuggIdx((i) => Math.min(suggestions.length - 1, i + 1));
           return;
         }
-        if (e.key === "Enter" || e.key === "Tab") {
+        if (e.key === "Tab") {
           e.preventDefault();
           const chosen = suggestions[suggIdx]?.cmd ?? suggestions[0]?.cmd;
           if (chosen) setValue(chosen);
           setSuggIdx(0);
           return;
+        }
+        if (e.key === "Enter") {
+          const chosen = suggestions[suggIdx]?.cmd ?? suggestions[0]?.cmd;
+          // Only intercept if the value isn't already the chosen command —
+          // if it already matches, fall through so Enter submits normally.
+          if (chosen && chosen.trim() !== value.trim()) {
+            e.preventDefault();
+            setValue(chosen);
+            setSuggIdx(0);
+            return;
+          }
         }
         if (e.key === "Escape") {
           e.preventDefault();
