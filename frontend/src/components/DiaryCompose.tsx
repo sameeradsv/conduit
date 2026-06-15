@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { todayIST, fmtDateIST, TZ } from "@/lib/tz";
 
 interface Props {
   onSend: (text: string) => void;
@@ -11,22 +12,18 @@ interface Props {
 }
 
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  return todayIST();
 }
 
 function offsetDate(dateStr: string, days: number) {
-  const d = new Date(dateStr + "T12:00:00");
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  const d = new Date(dateStr + "T12:00:00Z");
+  d.setUTCDate(d.getUTCDate() + days);
+  return new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(d);
 }
 
 function formatDateLabel(dateStr: string) {
-  const d = new Date(dateStr + "T12:00:00");
-  return d.toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
+  return fmtDateIST(new Date(dateStr + "T12:00:00Z"), {
+    weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
 }
 
