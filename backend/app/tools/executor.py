@@ -202,7 +202,12 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
 
                 r = await client.post(f"{settings.canopy_url}/api/interactions", json=payload, headers=h)
                 r.raise_for_status()
-                return json.dumps({"saved": True, "participants_resolved": len(participant_ids)})
+                return json.dumps({
+                    "saved": True,
+                    "observation": args.get("observation"),
+                    "person_names": args.get("person_names", []),
+                    "participants_resolved": len(participant_ids),
+                })
 
             elif name == "log_meal":
                 payload = {"decision": args["decision"]}
@@ -213,7 +218,12 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
                     payload["satisfaction"] = int(args["satisfaction"])
                 r = await client.post(f"{settings.chef_url}/history", json=payload, headers=h)
                 r.raise_for_status()
-                return json.dumps({"saved": True})
+                return json.dumps({
+                    "saved": True,
+                    "decision": args.get("decision"),
+                    "recipe_name": args.get("recipe_name"),
+                    "cuisine": args.get("cuisine"),
+                })
 
             else:
                 return json.dumps({"error": f"unknown tool: {name}"})

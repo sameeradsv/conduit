@@ -54,6 +54,7 @@ export interface ConfirmationItem {
   tool: string;
   success: boolean;
   error?: string | null;
+  summary?: string;
 }
 
 export type WakeupEvent =

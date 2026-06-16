@@ -121,6 +121,49 @@ def _coerce_args(name: str, args: dict) -> dict:
     return args
 
 
+def _truncate_summary(text: str, limit: int = 96) -> str:
+    cleaned = " ".join(text.split())
+    if len(cleaned) <= limit:
+        return cleaned
+    return cleaned[: limit - 1].rstrip() + "…"
+
+
+def _diary_summary(name: str, args: dict, result: dict) -> str:
+    """One-line description shown for each routed diary item."""
+    if name == "create_task":
+        text = (result.get("text") or args.get("text") or "task").strip()
+        if args.get("completed"):
+            return _truncate_summary(f"{text} (done)")
+        return _truncate_summary(text)
+    if name == "log_interaction":
+        obs = (args.get("observation") or result.get("observation") or "").strip()
+        people = [p.strip() for p in (args.get("person_names") or result.get("person_names") or []) if p]
+        if people and obs:
+            return _truncate_summary(f"with {', '.join(people)} — {obs}")
+        if obs:
+            return _truncate_summary(obs)
+        if people:
+            return _truncate_summary(f"with {', '.join(people)}")
+        return "interaction"
+    if name == "log_meal":
+        decision = (args.get("decision") or result.get("decision") or "meal").replace("_", " ")
+        detail = args.get("recipe_name") or args.get("cuisine") or result.get("recipe_name") or result.get("cuisine")
+        if detail:
+            return _truncate_summary(f"{decision}: {detail}")
+        return _truncate_summary(decision)
+    return name
+
+
+def _diary_confirmation(name: str, args: dict, result_data: dict) -> dict:
+    err = result_data.get("error")
+    return {
+        "tool": name,
+        "success": not err,
+        "error": err,
+        "summary": _diary_summary(name, args, result_data),
+    }
+
+
 async def stream_agent_chat(
     messages: list[ChatMessage],
     model: str,
@@ -178,8 +221,7 @@ async def stream_agent_chat(
             result_str = await execute_tool(name, args, sibling_token)
             result_data = json.loads(result_str)
             if diary:
-                err = result_data.get("error")
-                confirmations.append({"tool": name, "success": not err, "error": err})
+                confirmations.append(_diary_confirmation(name, args, result_data))
             else:
                 groq_messages.append({
                     "role": "tool",
@@ -223,8 +265,7 @@ async def stream_agent_chat(
             success = "error" not in result_data
 
             if diary:
-                err = result_data.get("error")
-                confirmations.append({"tool": tc.function.name, "success": not err, "error": err})
+                confirmations.append(_diary_confirmation(tc.function.name, args, result_data))
             else:
                 groq_messages.append({
                     "role": "tool",
