@@ -36,7 +36,15 @@ A structured confirmation shows what was saved and to which app. No AI response 
 
 ## Sibling app chat
 
-Circuit, canopy, and chef each have a `/chat` route — a full-screen terminal overlay powered by conduit's backend, scoped to that app's tool set. Accessible from each app's navigation.
+Circuit, canopy, and chef each have a `/chat` route with a native Groq agent on their own backend — no Conduit dependency for in-app chat:
+
+| App | Chat endpoint | Env var |
+|-----|---------------|---------|
+| circuit | `POST /api/agent/chat` | `GROQ_API_KEY` (+ optional `CIRCUIT_AGENT_MODEL`) |
+| canopy | `POST /api/ai/agent/chat` | `GROQ_API_KEY` |
+| chef | `POST /agent/chat` | `GROQ_API_KEY` (+ optional `CHEF_AGENT_MODEL`) |
+
+Use **Conduit** when you want cross-app queries (`@circuit`, `@canopy`, `@chef`), diary routing, or a single hub for all three apps.
 
 ---
 
@@ -148,7 +156,7 @@ conduit backend (hub)
 └── chef     :8003   recipes, decisions, history
 ```
 
-The `scope` parameter (`circuit` / `canopy` / `chef`) restricts tool access — used by the embedded `/chat` in each sibling app so it only surfaces its own data.
+The `scope` parameter (`circuit` / `canopy` / `chef`) restricts tool access when chatting **in Conduit** — e.g. `@chef what should I cook?` or scoped agent mode. Sibling apps' own `/chat` pages use native backend agents instead.
 
 ---
 

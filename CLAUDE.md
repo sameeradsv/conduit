@@ -7,7 +7,7 @@ Conduit is a terminal-style AI chat PWA that acts as the orchestration hub for a
 - **Agent mode** — interactive Q&A; AI calls read tools and streams a response
 - **Diary mode** — input-first capture; AI silently routes structured data to sibling apps, shows a confirmation summary only (no prose response)
 
-Conduit also embeds a scoped `TerminalChat` component inside each sibling app for context-specific chat.
+Conduit also provides scoped chat **within the Conduit hub** (`@circuit`, `@canopy`, `@chef`). Sibling apps run their own native Groq chat agents at `/chat` — they do not call Conduit.
 
 ---
 

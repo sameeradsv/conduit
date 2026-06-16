@@ -9,7 +9,7 @@ Conduit is the hub for the personal app ecosystem (circuit / canopy / chef). It 
 1. **Terminal UI** — interactive, question-driven chat: "What are my tasks today?", "Who should I assign this to?", "What should I cook?"
 2. **Diary UI** — input-driven capture: "Here's what I did today..." → parsed and silently routed to individual apps.
 
-The same terminal-like shell is also embedded inside each sibling app for context-specific chat.
+The same terminal-like shell is also available inside each sibling app at `/chat` — each runs a native Groq agent on its own backend. Use Conduit when you need cross-app orchestration or diary routing.
 
 ---
 
@@ -68,15 +68,14 @@ The same terminal-like shell is also embedded inside each sibling app for contex
 ### ✅ Implemented (Phase C — terminal UI in sibling apps, 2026-05-26)
 
 - **`TerminalChat` component** added to circuit, canopy, chef
-  - Full-screen terminal overlay (`position: fixed; inset: 0; z-index: 100`)
-  - Phosphor green-on-black theme matching conduit
-  - Calls conduit's `/api/agent/chat` with `scope=<app>`
-  - Uses each app's own auth token as `sibling_token`
-  - Configured via `NEXT_PUBLIC_CONDUIT_API_URL` env var (default: `http://localhost:8000`)
-- **`/chat` page** added to circuit, canopy, chef
-- **Nav updated** — "Chat" added to circuit nav, canopy sidebar + keyboard shortcut `5`, chef sidebar + bottom tabs
-- **`SCOPE_TOOLS` mapping** in conduit definitions.py — scoped tool subsets per app
-- **Per-scope system prompts** in conduit agent_service.py
+  - Full-screen chat UI accessible from each app's nav (`/chat`)
+  - **Updated (2026):** each app now calls its **own native Groq agent** — not Conduit
+    - circuit → `POST /api/agent/chat`
+    - canopy → `POST /api/ai/agent/chat`
+    - chef → `POST /agent/chat`
+  - Requires `GROQ_API_KEY` on each sibling backend; frontend uses `NEXT_PUBLIC_API_URL`
+- **`SCOPE_TOOLS` mapping** in conduit definitions.py — scoped tool subsets per app (used by Conduit hub only)
+- **Per-scope system prompts** in conduit agent_service.py (Conduit hub `@circuit` / `@canopy` / `@chef`)
 
 ---
 
