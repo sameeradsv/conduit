@@ -320,6 +320,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
   padding: 10px var(--pad-x);
   padding-left: max(var(--pad-x), env(safe-area-inset-left, 0px));
   padding-right: max(var(--pad-x), env(safe-area-inset-right, 0px));
+  padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
   background: var(--bg);
   flex-shrink: 0;
   position: relative;
