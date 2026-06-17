@@ -113,7 +113,7 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
             elif name == "get_my_tasks":
                 r = await client.get(f"{settings.circuit_url}/api/tasks", headers=h)
                 r.raise_for_status()
-                return json.dumps(_trim_tasks(r.json()))
+                return json.dumps(_trim_tasks(r.json() or []))
 
             elif name == "get_task_summary":
                 r = await client.get(f"{settings.circuit_url}/api/summary", headers=h)
@@ -126,7 +126,7 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
                     params["q"] = args["search"]
                 r = await client.get(f"{settings.canopy_url}/api/people", params=params, headers=h)
                 r.raise_for_status()
-                return json.dumps(_trim_people(r.json()))
+                return json.dumps(_trim_people(r.json() or []))
 
             elif name == "get_recent_interactions":
                 params: dict = {"limit": args.get("limit", 20)}
@@ -136,7 +136,7 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
                     params["tag"] = args["tag"]
                 r = await client.get(f"{settings.canopy_url}/api/interactions", params=params, headers=h)
                 r.raise_for_status()
-                return json.dumps(_trim_interactions(r.json()))
+                return json.dumps(_trim_interactions(r.json() or []))
 
             elif name == "get_interactions_for_person":
                 person_name = (args.get("person_name") or "").strip()
@@ -169,7 +169,7 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
                 r2.raise_for_status()
                 return json.dumps({
                     "person": person,
-                    "interactions": _trim_interactions(r2.json()),
+                    "interactions": _trim_interactions(r2.json() or []),
                 })
 
             elif name == "get_meal_recommendation":
@@ -191,7 +191,7 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
                     headers=h,
                 )
                 r.raise_for_status()
-                entries = r.json()
+                entries = r.json() or []
                 trimmed = [
                     {
                         "decision": e.get("decision"),
