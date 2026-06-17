@@ -70,16 +70,16 @@ _SCOPE_SYSTEMS: dict[str, str] = {
     ),
 }
 
-_TOOL_CALL_MODELS = {
-    "llama-3.3-70b-versatile",
-    "llama-3.1-8b-instant",
-    "llama-3.1-70b-versatile",
+# Models known NOT to support function/tool calling.
+# All other text-chat models are assumed to support tools.
+_NO_TOOL_MODELS: set[str] = {
+    "llama-3.2-1b-preview",
+    "llama-3.2-3b-preview",
 }
 
 # Diary mode always routes silently via tool calls. Try models in order on 429.
 _DIARY_MODEL_CHAIN = [
     "llama-3.3-70b-versatile",
-    "llama-3.1-70b-versatile",
     "llama-3.1-8b-instant",
 ]
 
@@ -227,7 +227,7 @@ async def stream_agent_chat(
     groq_messages = _build_messages(messages, system)
 
     effective_model = _DIARY_MODEL_CHAIN[0] if diary else model
-    use_tools = effective_model in _TOOL_CALL_MODELS
+    use_tools = effective_model not in _NO_TOOL_MODELS
     create_kwargs: dict = dict(
         model=effective_model,
         messages=groq_messages,

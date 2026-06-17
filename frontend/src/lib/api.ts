@@ -69,14 +69,31 @@ export interface Message {
   content: string;
 }
 
-export const MODELS = [
+export type ModelId = string;
+
+export interface ModelEntry {
+  id: string;
+  label: string;
+}
+
+export const DEFAULT_MODEL: ModelId = "llama-3.3-70b-versatile";
+
+// Minimal bootstrap list shown before the live fetch completes.
+export const BOOTSTRAP_MODELS: ModelEntry[] = [
   { id: "llama-3.3-70b-versatile", label: "llama-3.3-70b" },
   { id: "llama-3.1-8b-instant",    label: "llama-3.1-8b-instant" },
-  { id: "llama-3.1-70b-versatile",  label: "llama-3.1-70b" },
-  { id: "qwen-qwq-32b",            label: "qwen-qwq-32b" },
-] as const;
+];
 
-export type ModelId = (typeof MODELS)[number]["id"];
+export async function fetchModels(): Promise<ModelEntry[]> {
+  try {
+    const res = await fetch(apiUrl("/api/models"), { headers: authHeaders() });
+    if (!res.ok) return BOOTSTRAP_MODELS;
+    const data: { models: { id: string; label: string }[] } = await res.json();
+    return data.models.length ? data.models.map((m) => ({ id: m.id, label: m.label })) : BOOTSTRAP_MODELS;
+  } catch {
+    return BOOTSTRAP_MODELS;
+  }
+}
 
 export interface ConfirmationItem {
   tool: string;

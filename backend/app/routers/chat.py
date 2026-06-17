@@ -4,7 +4,7 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
 from app.schemas import ChatRequest, ModelsResponse, ModelInfo
-from app.services.groq_service import stream_chat, SUPPORTED_MODELS
+from app.services.groq_service import stream_chat, fetch_models
 
 router = APIRouter(prefix="/api", tags=["chat"])
 
@@ -37,6 +37,5 @@ async def chat(req: ChatRequest) -> StreamingResponse:
 
 @router.get("/models", response_model=ModelsResponse)
 async def get_models() -> ModelsResponse:
-    return ModelsResponse(
-        models=[ModelInfo(**m) for m in SUPPORTED_MODELS]
-    )
+    models = await fetch_models()
+    return ModelsResponse(models=[ModelInfo(**m) for m in models])

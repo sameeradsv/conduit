@@ -16,11 +16,14 @@ import {
   listSessions,
   getSession,
   deleteSession,
+  fetchModels,
   type Message,
   type ModelId,
+  type ModelEntry,
   type ConfirmationItem,
   type SavedSession,
-  MODELS,
+  DEFAULT_MODEL,
+  BOOTSTRAP_MODELS,
 } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { getToken } from "@/lib/auth";
@@ -57,8 +60,6 @@ const HELP_TEXT = `conduit — available commands:
   /clear             clear chat history
   /logout            sign out`;
 
-const MODELS_TEXT =
-  "available models:\n" + MODELS.map((m) => `  ${m.id}`).join("\n");
 
 const TOOL_APP: Record<string, string> = {
   create_task: "circuit",
@@ -115,7 +116,8 @@ export function TerminalShell() {
       content: "conduit ready. type a message or /help for commands.",
     },
   ]);
-  const [model, setModel] = useState<ModelId>("llama-3.3-70b-versatile");
+  const [model, setModel] = useState<ModelId>(DEFAULT_MODEL);
+  const [models, setModels] = useState<ModelEntry[]>(BOOTSTRAP_MODELS);
   const [status, setStatus] = useState<AppStatus>("ready");
   const [tokenCount, setTokenCount] = useState(0);
   const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM);
@@ -134,6 +136,10 @@ export function TerminalShell() {
     document.addEventListener("pointerdown", off, true);
     return () => document.removeEventListener("pointerdown", off, true);
   }, [userOpen]);
+
+  useEffect(() => {
+    fetchModels().then(setModels);
+  }, []);
 
   useEffect(() => {
     if (!userOpen || !user) return;
@@ -164,7 +170,7 @@ export function TerminalShell() {
     async (id: number) => {
       try {
         const session = await getSession(id);
-        const modelId = MODELS.find((m) => m.id === session.model)?.id ?? model;
+        const modelId = models.find((m) => m.id === session.model)?.id ?? model;
         setModel(modelId);
         setMessages([
           { id: uid(), role: "system", content: `~ resumed: ${session.title}` },
@@ -182,7 +188,7 @@ export function TerminalShell() {
         addSystem(`! ${err instanceof Error ? err.message : "could not load session"}`);
       }
     },
-    [addSystem, model],
+    [addSystem, model, models],
   );
 
   const removeSession = useCallback(
@@ -205,7 +211,7 @@ export function TerminalShell() {
           addSystem(HELP_TEXT);
           return true;
         case "/models":
-          addSystem(MODELS_TEXT);
+          addSystem("available models:\n" + models.map((m) => `  ${m.id}`).join("\n"));
           return true;
         case "/clear":
           setMessages([{ id: uid(), role: "system", content: "chat cleared." }]);
@@ -234,7 +240,7 @@ export function TerminalShell() {
           }
           return true;
         case "/model": {
-          const found = MODELS.find((m) => m.id === rest[0]);
+          const found = models.find((m) => m.id === rest[0]);
           if (found) {
             setModel(found.id);
             addSystem(`model → ${found.id}`);
@@ -295,7 +301,7 @@ export function TerminalShell() {
           return false;
       }
     },
-    [addMsg, addSystem, logout, chatMode, setMode, user, resumeSession],
+    [addMsg, addSystem, logout, chatMode, setMode, user, resumeSession, models],
   );
 
   const handleSend = useCallback(
@@ -640,7 +646,7 @@ export function TerminalShell() {
         <span className="brand">conduit</span>
         <div className="topbar-controls">
           <ThemeToggle />
-          <ModelPicker value={model} onChange={setModel} />
+          <ModelPicker value={model} models={models} onChange={setModel} />
           {user && (
             <div className="dropdown dropdown-user" ref={uref}>
               <button className="pill-btn pill-btn-user" onClick={() => setUserOpen((o) => !o)}>

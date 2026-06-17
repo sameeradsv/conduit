@@ -124,10 +124,13 @@ Chef has no `/api` prefix on sync routes. Response fields differ per app — exe
 
 ## Supported Groq models
 
-- `llama-3.3-70b-versatile` (default, used for diary)
-- `llama-3.1-8b-instant`
-- `llama-3.1-70b-versatile`
-- `qwen-qwq-32b`
+The model list is fetched live from `GET https://api.groq.com/openai/v1/models` on each
+`/api/models` request (non-chat models such as Whisper and TTS are filtered out).
+Falls back to a minimal hardcoded list if Groq is unreachable.
+
+- `llama-3.3-70b-versatile` (default; also first in diary fallback chain)
+- `llama-3.1-8b-instant` (diary fallback chain last resort)
+- all other current Groq text-chat models shown dynamically in the picker
 
 ---
 

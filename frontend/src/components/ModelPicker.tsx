@@ -1,17 +1,18 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MODELS, type ModelId } from "@/lib/api";
+import type { ModelId, ModelEntry } from "@/lib/api";
 
 interface Props {
   value: ModelId;
+  models: ModelEntry[];
   onChange: (m: ModelId) => void;
 }
 
-export function ModelPicker({ value, onChange }: Props) {
+export function ModelPicker({ value, models, onChange }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const current = MODELS.find((m) => m.id === value);
+  const current = models.find((m) => m.id === value);
 
   useEffect(() => {
     if (!open) return;
@@ -31,7 +32,7 @@ export function ModelPicker({ value, onChange }: Props) {
       {open && (
         <div className="menu">
           <div className="head">─── models ───</div>
-          {MODELS.map((m) => (
+          {models.map((m) => (
             <button
               key={m.id}
               aria-current={m.id === value}

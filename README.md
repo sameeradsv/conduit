@@ -128,12 +128,9 @@ App: http://localhost:3000
 
 ## Available models (Groq)
 
-| ID | Notes |
-|----|-------|
-| `llama-3.3-70b-versatile` | default — best quality, supports tool calls |
-| `llama-3.1-8b-instant` | fast, supports tool calls |
-| `llama-3.1-70b-versatile` | long context (128K) |
-| `qwen-qwq-32b` | reasoning model |
+Model list is fetched live from Groq's API on each `/api/models` request.
+Non-chat models (Whisper, TTS, guard) are filtered out automatically.
+Falls back to `llama-3.3-70b-versatile` + `llama-3.1-8b-instant` if Groq is unreachable.
 
 ---
 
