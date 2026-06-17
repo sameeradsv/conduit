@@ -149,6 +149,7 @@ conduit backend (hub)
 │   get_task_summary
 │   get_people             log_interaction
 │   get_recent_interactions
+│   get_interactions_for_person
 │   get_meal_recommendation  log_meal
 │   get_cook_vs_order
 │   get_food_log

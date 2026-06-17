@@ -138,6 +138,40 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
                 r.raise_for_status()
                 return json.dumps(_trim_interactions(r.json()))
 
+            elif name == "get_interactions_for_person":
+                person_name = (args.get("person_name") or "").strip()
+                if not person_name:
+                    return json.dumps({"error": "person_name is required"})
+                r = await client.get(
+                    f"{settings.canopy_url}/api/people",
+                    params={"q": person_name},
+                    headers=h,
+                )
+                r.raise_for_status()
+                people_raw = r.json()
+                people = people_raw if isinstance(people_raw, list) else people_raw.get("items", [])
+                trimmed = _trim_people(people)
+                if not trimmed:
+                    return json.dumps({"error": "No person found", "query": person_name})
+                exact = [p for p in trimmed if p.get("name", "").lower() == person_name.lower()]
+                pool = exact if len(exact) == 1 else trimmed
+                if len(pool) > 1 and len(exact) != 1:
+                    return json.dumps({
+                        "ambiguous": True,
+                        "query": person_name,
+                        "candidates": pool[:5],
+                    })
+                person = pool[0]
+                params = {"limit": args.get("limit", 20), "person_id": person["id"]}
+                if args.get("tag"):
+                    params["tag"] = args["tag"]
+                r2 = await client.get(f"{settings.canopy_url}/api/interactions", params=params, headers=h)
+                r2.raise_for_status()
+                return json.dumps({
+                    "person": person,
+                    "interactions": _trim_interactions(r2.json()),
+                })
+
             elif name == "get_meal_recommendation":
                 limit = min(max(args.get("limit", 3), 1), 5)
                 r = await client.get(f"{settings.chef_url}/recipes/recommend", params={"limit": limit}, headers=h)

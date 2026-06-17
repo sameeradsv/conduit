@@ -102,12 +102,9 @@ Conduit passes `conduit_auth_token` as the `sibling_token` to circuit/canopy/che
 
 ### ⬜ Future work
 
-See **[docs/DEFERRED.md](docs/DEFERRED.md)** and ecosystem master in Circuit repo.
+Production Cortex sibling-auth when apps don't share one Cortex instance. See **[docs/DEFERRED.md](docs/DEFERRED.md)**.
 
-- Production Cortex sibling-auth unification when apps don't share one Cortex instance
-- `get_interactions_for_person` — dedicated tool with person resolution by name (optional)
-
-**AI policy:** Groq is the only supported LLM provider (`GROQ_API_KEY`). Multi-provider is **not planned**.
+**AI policy:** Groq-only. Multi-provider not planned.
 
 #### Phase D — Additional write tools (shipped 2026-06)
 - [x] `update_task` — circuit `PATCH /api/tasks/{id}`

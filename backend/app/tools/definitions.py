@@ -87,6 +87,35 @@ READ_TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "get_interactions_for_person",
+            "description": (
+                "Fetch recent Canopy interactions for a person by name. Resolves person_name "
+                "to person_id automatically. Use when the user asks about a specific person "
+                "(e.g. 'when did I last talk to Alice'). Returns ambiguity if multiple people match."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "person_name": {
+                        "type": "string",
+                        "description": "Person name or partial name to search",
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Number of interactions (default 20)",
+                    },
+                    "tag": {
+                        "type": "string",
+                        "description": "Optional tag filter",
+                    },
+                },
+                "required": ["person_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "get_meal_recommendation",
             "description": (
                 "Fetch meal/recipe recommendations from Chef based on the user's pantry, "
@@ -365,7 +394,7 @@ SCOPE_TOOLS: dict[str, list] = {
     ],
     "canopy": [
         t for t in READ_TOOLS
-        if t["function"]["name"] in ("get_people", "get_recent_interactions")
+        if t["function"]["name"] in ("get_people", "get_recent_interactions", "get_interactions_for_person")
     ] + [
         t for t in WRITE_TOOLS
         if t["function"]["name"] in ("log_interaction", "create_person")

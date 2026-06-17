@@ -178,4 +178,4 @@ Diary entries are saved to session history after routing (same as agent/chat).
 
 ## Future work
 
-See **[docs/DEFERRED.md](docs/DEFERRED.md)** — production sibling-auth, optional `get_interactions_for_person`. Groq-only; no multi-provider.
+See **[docs/DEFERRED.md](docs/DEFERRED.md)** — production sibling-auth. `get_interactions_for_person` shipped 2026-06-17.

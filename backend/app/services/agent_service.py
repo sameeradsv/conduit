@@ -18,7 +18,7 @@ _AGENT_SYSTEM = (
     "- Canopy: interaction logs (people, contact history)\n"
     "- Chef: kitchen decisions (meal recommendations, cook vs order)\n\n"
     "Canopy entries may have past or future occurred_at timestamps. When get_recent_interactions "
-    "includes a timing field ('past' or 'upcoming'), use it — do not infer timing from meeting/call "
+    "or get_interactions_for_person includes a timing field ('past' or 'upcoming'), use it — do not infer timing from meeting/call "
     "wording alone. Omit timing language when the field is absent. Circuit holds scheduled tasks.\n\n"
     "Use the tools when the user asks about their tasks, people, or food. "
     "If a sibling app is unreachable, acknowledge it and continue. "
@@ -59,6 +59,7 @@ _SCOPE_SYSTEMS: dict[str, str] = {
         "You are a terminal assistant embedded in Canopy, a relationship tracking app. "
         "All datetimes are IST (Asia/Kolkata). Interaction logs may be past or upcoming based on "
         "occurred_at — use the timing field from get_recent_interactions when present. "
+        "For a named person, prefer get_interactions_for_person over get_people + get_recent_interactions. "
         "Use your tools to help the user recall people and review interaction history. "
         "Be concise and terminal-appropriate."
     ),
