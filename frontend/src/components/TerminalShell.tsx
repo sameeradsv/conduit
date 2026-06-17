@@ -311,7 +311,13 @@ export function TerminalShell() {
           for await (const event of streamWakeup(abortRef.current.signal)) {
             if ("done" in event && event.done) break;
             const icon = event.ok ? "✓" : "✗";
-            addSystem(`${icon}  ${event.app.padEnd(10)}${event.elapsed}s`);
+            const auth =
+              event.auth_ok === undefined
+                ? ""
+                : event.auth_ok
+                  ? "  auth ok"
+                  : "  auth fail";
+            addSystem(`${icon}  ${event.app.padEnd(10)}${event.elapsed}s${auth}`);
           }
           setStatus("ready");
         } catch (err: unknown) {

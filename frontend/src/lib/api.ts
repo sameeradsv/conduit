@@ -86,11 +86,14 @@ export interface ConfirmationItem {
 }
 
 export type WakeupEvent =
-  | { app: string; ok: boolean; elapsed: number; done?: never }
+  | { app: string; ok: boolean; elapsed: number; auth_ok?: boolean; done?: never }
   | { done: true; app?: never };
 
 export async function* streamWakeup(signal?: AbortSignal): AsyncGenerator<WakeupEvent> {
-  const res = await fetch(apiUrl("/api/wakeup"), { signal });
+  const headers: Record<string, string> = {};
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(apiUrl("/api/wakeup"), { signal, headers });
   if (!res.ok) throw new Error(`wakeup failed: HTTP ${res.status}`);
   const reader = res.body!.getReader();
   const decoder = new TextDecoder();

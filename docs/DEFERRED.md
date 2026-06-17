@@ -3,10 +3,17 @@
 **Last updated:** 2026-06-17  
 **Canonical copy:** [Circuit `docs/DEFERRED.md`](https://github.com/sameeradsv/circuit/blob/main/docs/DEFERRED.md)
 
-## Shipped polish (2026-06-17)
+## BLOCKED
 
-- `get_interactions_for_person` read tool (name → person_id → interactions)
+| Item | Notes |
+|------|--------|
+| Production sibling-auth when Cortex instances diverge | Token exchange not designed |
 
-## Still deferred
+## Shipped (2026-06-17)
 
-Production Cortex sibling-auth — see master doc.
+- `get_interactions_for_person` read tool
+- `/wakeup` auth probe — passes Bearer to each sibling `/auth/me`; reports `auth_ok` in SSE
+
+## Rejected
+
+- Multi-provider LLM (Groq-only policy)
