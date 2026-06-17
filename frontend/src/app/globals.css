@@ -124,7 +124,18 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .brand::before { content: "["; color: var(--dim); margin-right: 2px; }
 .brand::after  { content: "]"; color: var(--dim); margin-left: 2px; }
 
-.topbar-grow { flex: 1; }
+.topbar-grow { flex: 1; min-width: 0; }
+
+.topbar-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  margin-left: auto;
+  min-width: 0;
+  max-width: 100%;
+  justify-content: flex-end;
+}
 
 /* ── Pill buttons ────────────────────────────────────────────── */
 .pill-btn {
@@ -138,15 +149,27 @@ button, input, textarea, select { font: inherit; color: inherit; }
   border-radius: 0;
   transition: background 80ms, color 80ms;
   white-space: nowrap;
-  flex-shrink: 1;
-  min-width: 0;
+  flex-shrink: 0;
+}
+.pill-btn:hover { background: var(--bg-2); color: var(--ink-bold); }
+.pill-btn .dim   { color: var(--dim); }
+.pill-btn .caret { color: var(--dim); margin-left: 6px; flex-shrink: 0; }
+
+/* Session pill — always show @username; truncate only very long names */
+.dropdown-user { flex-shrink: 0; max-width: 100%; }
+.pill-btn-user {
+  max-width: min(14rem, 100%);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Model pill may shrink on narrow screens */
+.dropdown-model { flex-shrink: 1; min-width: 0; max-width: 100%; }
+.dropdown-model .pill-btn {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.pill-btn:hover { background: var(--bg-2); color: var(--ink-bold); }
-.pill-btn .dim   { color: var(--dim); }
-.pill-btn .caret { color: var(--dim); margin-left: 6px; }
 
 /* ── Dropdown ────────────────────────────────────────────────── */
 .dropdown { position: relative; flex-shrink: 0; }
@@ -917,13 +940,32 @@ button, input, textarea, select { font: inherit; color: inherit; }
 /* ── Mobile tweaks ────────────────────────────────────────────── */
 @media (max-width: 768px) {
   :root { --pad-x: 12px; }
+  .topbar-controls {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .dropdown-model .pill-btn { max-width: min(12rem, 50vw); }
+}
+
+@media (orientation: portrait) and (max-width: 900px) {
+  .topbar-controls {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+  }
+  .dropdown-user { margin-left: auto; }
 }
 
 @media (max-width: 480px) {
-  .topbar { gap: 6px; }
-  .topbar-grow { display: none; }
-  .pill-btn { padding: 3px 7px; max-width: calc(50% - 4px); }
-  .pill-btn .dim { display: none; }
+  .topbar { gap: 6px; align-items: flex-start; }
+  .topbar-controls {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+    row-gap: 6px;
+  }
+  .dropdown-user { margin-left: auto; }
+  .pill-btn { padding: 3px 7px; }
+  .dropdown-model .pill-btn { max-width: min(11rem, 58vw); }
+  .dropdown-model .pill-btn .dim { display: none; }
 
   .modebar { padding: 0 10px; }
   .mode { padding: 4px 10px; flex: 1 1 auto; text-align: center; }

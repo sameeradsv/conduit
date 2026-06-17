@@ -496,31 +496,32 @@ export function TerminalShell() {
       {/* topbar — bracket variant */}
       <div className="topbar">
         <span className="brand">conduit</span>
-        <span className="topbar-grow" />
-        <ThemeToggle />
-        <ModelPicker value={model} onChange={setModel} />
-        {user && (
-          <div className="dropdown" ref={uref}>
-            <button className="pill-btn" onClick={() => setUserOpen((o) => !o)}>
-              <span className="dim">@</span>{user.username}{" "}
-              <span className="caret">▾</span>
-            </button>
-            {userOpen && (
-              <div className="menu">
-                <div className="head">─── session ───</div>
-                <button
-                  onClick={() => {
-                    setUserOpen(false);
-                    logout();
-                  }}
-                >
-                  <span className="marker" style={{ color: "var(--err)" }}>×</span>
-                  logout
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+        <div className="topbar-controls">
+          <ThemeToggle />
+          <ModelPicker value={model} onChange={setModel} />
+          {user && (
+            <div className="dropdown dropdown-user" ref={uref}>
+              <button className="pill-btn pill-btn-user" onClick={() => setUserOpen((o) => !o)}>
+                <span className="dim">@</span>{user.username}{" "}
+                <span className="caret">▾</span>
+              </button>
+              {userOpen && (
+                <div className="menu">
+                  <div className="head">─── session ───</div>
+                  <button
+                    onClick={() => {
+                      setUserOpen(false);
+                      logout();
+                    }}
+                  >
+                    <span className="marker" style={{ color: "var(--err)" }}>×</span>
+                    logout
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* modebar */}

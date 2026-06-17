@@ -23,7 +23,7 @@ export function ModelPicker({ value, onChange }: Props) {
   }, [open]);
 
   return (
-    <div className="dropdown" ref={ref}>
+    <div className="dropdown dropdown-model" ref={ref}>
       <button className="pill-btn" onClick={() => setOpen((o) => !o)}>
         <span className="dim">model:</span> {current?.label ?? value}{" "}
         <span className="caret">▾</span>
