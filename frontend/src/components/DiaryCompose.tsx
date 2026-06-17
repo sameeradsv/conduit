@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { todayIST, fmtDateIST, TZ } from "@/lib/tz";
+import { todayIST, fmtDateIST, istNoonDate, offsetDateIST } from "@/lib/tz";
 
 interface Props {
   onSend: (text: string) => void;
@@ -15,14 +15,8 @@ function todayStr() {
   return todayIST();
 }
 
-function offsetDate(dateStr: string, days: number) {
-  const d = new Date(dateStr + "T12:00:00Z");
-  d.setUTCDate(d.getUTCDate() + days);
-  return new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(d);
-}
-
 function formatDateLabel(dateStr: string) {
-  return fmtDateIST(new Date(dateStr + "T12:00:00Z"), {
+  return fmtDateIST(istNoonDate(dateStr), {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
 }
@@ -93,7 +87,7 @@ export function DiaryCompose({ onSend, onAbort, onBack, disabled, streaming }: P
         <div className="diary-date-wrap" title="Click to change date">
           <button
             className="diary-nav-btn"
-            onClick={() => setEntryDate((d) => offsetDate(d, -1))}
+            onClick={() => setEntryDate((d) => offsetDateIST(d, -1))}
             aria-label="Previous day"
           >
             ‹
@@ -104,7 +98,7 @@ export function DiaryCompose({ onSend, onAbort, onBack, disabled, streaming }: P
           {isPast && <span className="diary-past-badge">past entry</span>}
           <button
             className="diary-nav-btn"
-            onClick={() => setEntryDate((d) => offsetDate(d, 1))}
+            onClick={() => setEntryDate((d) => offsetDateIST(d, 1))}
             disabled={isToday}
             aria-label="Next day"
           >
@@ -134,7 +128,7 @@ export function DiaryCompose({ onSend, onAbort, onBack, disabled, streaming }: P
           onKeyDown={handleKeyDown}
           placeholder={
             isPast
-              ? `what happened on ${new Date(entryDate + "T12:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric" })}…`
+              ? `what happened on ${fmtDateIST(istNoonDate(entryDate), { month: "long", day: "numeric" })}…`
               : "what happened today…\n\ntasks → circuit  ·  interactions → canopy  ·  meals → chef"
           }
           spellCheck

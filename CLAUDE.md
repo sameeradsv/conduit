@@ -68,7 +68,9 @@ On Render, set `CIRCUIT_URL`, `CANOPY_URL`, `CHEF_URL` as environment variables 
 | `backend/app/services/agent_service.py` | Core: diary system prompt, agent system prompt, tool routing, Groq call, failed_generation fallback |
 | `backend/app/tools/definitions.py` | Tool schemas (READ_TOOLS, WRITE_TOOLS, SCOPE_TOOLS) |
 | `backend/app/tools/executor.py` | Tool execution — calls sibling app endpoints |
+| `backend/app/tz_utils.py` | IST datetime parsing — diary routing, Canopy/Chef/Circuit write conversions |
 | `backend/app/routers/wakeup.py` | SSE health pinger with retry (10s interval, 90s timeout) |
+| `frontend/src/lib/tz.ts` | IST display helpers for diary date navigation |
 | `frontend/src/components/TerminalShell.tsx` | Main shell — mode routing, slash command handling, diary/agent/chat dispatch |
 | `frontend/src/components/DiaryCompose.tsx` | Diary input: multi-line, date header, Ctrl+Enter to save |
 | `frontend/src/components/CommandInput.tsx` | Agent/chat input: slash command menu, history navigation |
@@ -84,6 +86,28 @@ On Render, set `CIRCUIT_URL`, `CANOPY_URL`, `CHEF_URL` as environment variables 
 - **Groq-only backend** for MVP; multi-provider (Claude, GPT-4o, Gemini, Ollama) is a future phase
 - **Diary model fixed**: always `llama-3.3-70b-versatile` regardless of user's selected chat model — most reliable for tool calls
 - **Conduit as orchestrator only**: sibling apps have no inter-app calls
+
+---
+
+## Timezone contract
+
+All user-facing datetimes in Conduit are **IST (Asia/Kolkata, UTC+05:30)**.
+
+- **Diary past entries** — date picker sends `[Entry date: YYYY-MM-DD]`; the router sets `occurred_at` / `timestamp` to `YYYY-MM-DDT12:00:00+05:30`. Frontend date math uses `istNoonDate()` / `offsetDateIST()` in `frontend/src/lib/tz.ts`.
+- **Write tools** — `backend/app/tz_utils.py` normalizes naive LLM datetimes as IST, then converts per sibling: Canopy → UTC `Z`, Chef → naive IST string, Circuit → epoch ms.
+- **Read tools** — `get_recent_interactions` returns `occurred_at` formatted as `YYYY-MM-DD HH:MM IST` and a `timing` field (`past` | `upcoming`) when `occurred_at` is present; omitted when unavailable. Agent uses `timing` — does not infer from meeting/call wording.
+
+---
+
+## Energy sync endpoints (`get_energy` tool)
+
+| App | Endpoint |
+|-----|----------|
+| circuit | `GET /api/energy/sync` |
+| canopy | `GET /api/sync/energy` |
+| chef | `GET /sync/energy` |
+
+Chef has no `/api` prefix on sync routes. Response fields differ per app — executor maps Chef `drain_so_far` → `energy_so_far` as `1 − drain`.
 
 ---
 
@@ -128,7 +152,8 @@ The wakeup router retries every 10s for up to 90s to handle Render cold-start 50
 | `get_my_tasks` | circuit `GET /api/tasks` |
 | `get_task_summary` | circuit `GET /api/summary` |
 | `get_people` | canopy `GET /api/people` |
-| `get_recent_interactions` | canopy `GET /api/interactions` |
+| `get_recent_interactions` | canopy `GET /api/interactions` — IST times; optional `timing` (`past`/`upcoming`) |
+| `get_energy` | circuit `/api/energy/sync` + canopy `/api/sync/energy` + chef `/sync/energy` |
 | `get_meal_recommendation` | chef `GET /recipes/recommend` |
 | `get_cook_vs_order` | chef `GET /decision/cook-vs-order` |
 | `get_food_log` | chef `GET /history` |

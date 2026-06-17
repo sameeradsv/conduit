@@ -59,8 +59,10 @@ READ_TOOLS = [
         "function": {
             "name": "get_recent_interactions",
             "description": (
-                "Fetch recent interaction logs from Canopy. "
-                "Can filter by person_id or tag. Returns context, observation, outcome, participants, and date."
+                "Fetch recent interaction logs from Canopy. Times are in IST. Each entry may "
+                "include timing ('past' or 'upcoming') when occurred_at is available — use that "
+                "field rather than guessing from the observation text. "
+                "Can filter by person_id or tag."
             ),
             "parameters": {
                 "type": "object",
@@ -173,7 +175,10 @@ WRITE_TOOLS = [
                     },
                     "occurred_at": {
                         "type": "string",
-                        "description": "ISO 8601 datetime when the task was worked on — set from [Entry date] prefix for past entries, omit for today",
+                        "description": (
+                            "When the task was worked on, IST (Asia/Kolkata). "
+                            "Use YYYY-MM-DDT12:00:00+05:30 from [Entry date] prefix for past entries; omit for today"
+                        ),
                     },
                 },
                 "required": ["text"],
@@ -215,7 +220,10 @@ WRITE_TOOLS = [
                     },
                     "occurred_at": {
                         "type": "string",
-                        "description": "ISO 8601 datetime when it happened — set from [Entry date] prefix for past entries, omit for today",
+                        "description": (
+                            "When the interaction happened, IST (Asia/Kolkata). "
+                            "Use YYYY-MM-DDT12:00:00+05:30 from [Entry date] prefix for past entries; omit for today"
+                        ),
                     },
                 },
                 "required": ["observation"],
@@ -251,7 +259,10 @@ WRITE_TOOLS = [
                     },
                     "timestamp": {
                         "type": "string",
-                        "description": "ISO 8601 datetime when the meal occurred — set from [Entry date] prefix for past entries",
+                        "description": (
+                            "When the meal occurred, IST (Asia/Kolkata). "
+                            "Use YYYY-MM-DDT12:00:00+05:30 from [Entry date] prefix for past entries"
+                        ),
                     },
                 },
                 "required": ["decision"],

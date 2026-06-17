@@ -13,7 +13,7 @@ Terminal-style AI hub for the personal app ecosystem. Query and update your task
 |------|---------|--------------|
 | **Chat** | default | Direct Groq streaming — no tools |
 | **Agent** | `/agent` or toggle | Reads live data from circuit, canopy, chef via tools |
-| **Diary** | `/diary` or toggle | Full-screen compose (Kalam hand font); supports past-date entries; routes to apps |
+| **Diary** | `/diary` or toggle | Full-screen compose (Kalam hand font); past-date entries in IST; routes to apps |
 | **Digest** | `/digest` | One-shot daily briefing from all three apps |
 
 ### Agent mode — example questions
@@ -31,6 +31,8 @@ Write a freeform daily note. The model parses it silently and routes each item:
 - Meals and food decisions → **chef**
 
 A structured confirmation shows what was saved and to which app. No AI response prose.
+
+Past-date diary entries use IST noon (`+05:30`) as the default timestamp when routing to sibling apps.
 
 ---
 

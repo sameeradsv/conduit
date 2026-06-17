@@ -1,6 +1,6 @@
 # Conduit — Implementation Plan
 
-Last updated: 2026-05-26
+Last updated: 2026-06-17
 
 ## Vision
 
@@ -30,7 +30,8 @@ The same terminal-like shell is also available inside each sibling app at `/chat
 | `get_my_tasks` | circuit `/api/tasks` | pending/completed tasks with priority, effort, tag |
 | `get_task_summary` | circuit `/api/summary` | totals, completion rate, breakdown by tag |
 | `get_people` | canopy `/api/people` | people list with optional name search |
-| `get_recent_interactions` | canopy `/api/interactions` | recent interactions, filterable by person/tag |
+| `get_recent_interactions` | canopy `/api/interactions` | recent interactions in IST; `timing` past/upcoming when `occurred_at` set |
+| `get_energy` | circuit + canopy + chef sync endpoints | cross-app energy snapshot |
 | `get_meal_recommendation` | chef `/recipes/recommend` | recipe recommendations |
 | `get_cook_vs_order` | chef `/decision/cook-vs-order` | cook-vs-order decision with reasoning |
 | `get_food_log` | chef `/history` | today's meal log |
@@ -76,6 +77,14 @@ The same terminal-like shell is also available inside each sibling app at `/chat
   - Requires `GROQ_API_KEY` on each sibling backend; frontend uses `NEXT_PUBLIC_API_URL`
 - **`SCOPE_TOOLS` mapping** in conduit definitions.py — scoped tool subsets per app (used by Conduit hub only)
 - **Per-scope system prompts** in conduit agent_service.py (Conduit hub `@circuit` / `@canopy` / `@chef`)
+
+### ✅ Implemented (Phase E — IST + Canopy timing, 2026-06-17)
+
+- **`backend/app/tz_utils.py`** — IST parsing; diary datetimes normalized to `+05:30`; per-sibling write conversions
+- **Diary compose** — date navigation and labels use IST noon anchor (`istNoonDate`, `offsetDateIST`)
+- **`get_recent_interactions`** — returns IST display times and `timing: past | upcoming` when `occurred_at` is available
+- **Agent prompts** — use `timing` field from tools; do not infer past/upcoming from observation text alone
+- **`get_energy` URL fix** — canopy `/api/sync/energy`, chef `/sync/energy`; Chef response field mapping corrected
 
 ---
 

@@ -1,11 +1,18 @@
 import asyncio
 import json
-from datetime import datetime, timezone
 from typing import Optional
 
 import httpx
 
 from app.config import settings
+from app.tz_utils import (
+    format_ist_display,
+    now_utc_naive,
+    parse_canopy_stored,
+    to_canopy_occurred_at,
+    to_chef_timestamp,
+    to_circuit_epoch_ms,
+)
 
 _TIMEOUT = httpx.Timeout(15.0)
 
@@ -27,16 +34,22 @@ def _trim_people(people: list) -> list:
 
 
 def _trim_interactions(items: list) -> list:
+    now = now_utc_naive()
     result = []
     for i in items:
-        result.append({
-            "occurred_at": i.get("occurred_at"),
+        raw_at = i.get("occurred_at")
+        at_utc = parse_canopy_stored(raw_at) if raw_at else None
+        entry: dict = {
+            "occurred_at": format_ist_display(raw_at) if raw_at else None,
             "context": i.get("context"),
             "observation": i.get("observation"),
             "outcome": i.get("outcome"),
             "participants": [p.get("name") for p in i.get("participants", [])],
             "tags": [t.get("name") for t in i.get("tags", [])],
-        })
+        }
+        if at_utc is not None:
+            entry["timing"] = "past" if at_utc <= now else "upcoming"
+        result.append(entry)
     return result
 
 
@@ -55,8 +68,8 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
 
                 circuit_data, canopy_data, chef_data = await asyncio.gather(
                     _safe_get(f"{settings.circuit_url}/api/energy/sync"),
-                    _safe_get(f"{settings.canopy_url}/sync/energy"),
-                    _safe_get(f"{settings.chef_url}/energy/timeline"),
+                    _safe_get(f"{settings.canopy_url}/api/sync/energy"),
+                    _safe_get(f"{settings.chef_url}/sync/energy"),
                 )
 
                 result: dict = {}
@@ -74,16 +87,23 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
                         "interactions_today": canopy_data.get("interactions_so_far"),
                     }
                 if chef_data:
+                    drain = chef_data.get("drain_so_far")
+                    meals = chef_data.get("meals_today") or []
                     result["meals"] = {
-                        "avg_energy": chef_data.get("avg_energy"),
-                        "meals_today": len(chef_data.get("events", [])),
+                        "energy_so_far": round(max(0.0, 1.0 - drain), 3) if isinstance(drain, (int, float)) else None,
+                        "meals_today": len(meals),
+                        "skipped_meals": len(chef_data.get("skipped_meals") or []),
                     }
+
+                chef_energy = None
+                if chef_data and isinstance(chef_data.get("drain_so_far"), (int, float)):
+                    chef_energy = max(0.0, 1.0 - chef_data["drain_so_far"])
 
                 energies = [v for v in [
                     circuit_data.get("manual_energy") if circuit_data else None,
                     circuit_data.get("energy_so_far") if circuit_data else None,
                     canopy_data.get("energy_so_far") if canopy_data else None,
-                    chef_data.get("avg_energy") if chef_data else None,
+                    chef_energy,
                 ] if v is not None]
                 if energies:
                     result["estimated_energy"] = round(sum(energies) / len(energies), 3)
@@ -148,6 +168,10 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
                     }
                     for e in entries
                 ]
+                # Chef timestamps are naive IST on the wire
+                for row in trimmed:
+                    if row.get("timestamp"):
+                        row["timestamp"] = f"{row['timestamp']} IST"
                 return json.dumps(trimmed)
 
             # ── Write tools ───────────────────────────────────────────
@@ -158,8 +182,7 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
                         payload[field] = args[field]
                 if args.get("occurred_at"):
                     try:
-                        dt = datetime.fromisoformat(args["occurred_at"].replace("Z", "+00:00"))
-                        epoch_ms = int(dt.astimezone(timezone.utc).timestamp() * 1000)
+                        epoch_ms = to_circuit_epoch_ms(args["occurred_at"])
                         payload["scheduled_at"] = epoch_ms
                         payload["client_created_at"] = epoch_ms
                     except ValueError:
@@ -196,9 +219,14 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
                     "participant_ids": participant_ids,
                     "tag_names": args.get("tag_names", []),
                 }
-                for field in ("context", "outcome", "occurred_at"):
+                for field in ("context", "outcome"):
                     if args.get(field):
                         payload[field] = args[field]
+                if args.get("occurred_at"):
+                    try:
+                        payload["occurred_at"] = to_canopy_occurred_at(args["occurred_at"])
+                    except ValueError:
+                        pass
 
                 r = await client.post(f"{settings.canopy_url}/api/interactions", json=payload, headers=h)
                 r.raise_for_status()
@@ -211,9 +239,14 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
 
             elif name == "log_meal":
                 payload = {"decision": args["decision"]}
-                for field in ("recipe_name", "cuisine", "timestamp"):
+                for field in ("recipe_name", "cuisine"):
                     if args.get(field) is not None:
                         payload[field] = args[field]
+                if args.get("timestamp") is not None:
+                    try:
+                        payload["timestamp"] = to_chef_timestamp(args["timestamp"])
+                    except ValueError:
+                        pass
                 if args.get("satisfaction") is not None:
                     payload["satisfaction"] = int(args["satisfaction"])
                 r = await client.post(f"{settings.chef_url}/history", json=payload, headers=h)

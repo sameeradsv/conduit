@@ -8,13 +8,18 @@ from groq import AsyncGroq, APIStatusError
 from app.schemas import ChatMessage
 from app.tools.definitions import READ_TOOLS, WRITE_TOOLS, SCOPE_TOOLS
 from app.tools.executor import execute_tool
+from app.tz_utils import ensure_ist_datetime
 
 _AGENT_SYSTEM = (
     "You are Conduit, a terminal-style AI assistant. "
+    "All dates and times are in IST (Asia/Kolkata, UTC+05:30).\n"
     "You have live access to the user's other apps via tools:\n"
-    "- Circuit: task management (tasks, summaries)\n"
-    "- Canopy: relationship tracking (people, interaction logs)\n"
+    "- Circuit: task management (tasks, summaries, scheduled calendar items)\n"
+    "- Canopy: interaction logs (people, contact history)\n"
     "- Chef: kitchen decisions (meal recommendations, cook vs order)\n\n"
+    "Canopy entries may have past or future occurred_at timestamps. When get_recent_interactions "
+    "includes a timing field ('past' or 'upcoming'), use it — do not infer timing from meeting/call "
+    "wording alone. Omit timing language when the field is absent. Circuit holds scheduled tasks.\n\n"
     "Use the tools when the user asks about their tasks, people, or food. "
     "If a sibling app is unreachable, acknowledge it and continue. "
     "Keep responses concise and terminal-appropriate."
@@ -37,9 +42,10 @@ _DIARY_SYSTEM = (
     "  'met John over breakfast and then worked on the app' → log_interaction + log_meal + create_task\n"
     "  'did not have a meal in 24 hours' → no tools called\n"
     "  'skipped lunch' → no tools called\n"
-    "Date handling: if the entry starts with [Entry date: YYYY-MM-DD], that is the date the events "
-    "occurred. Set occurred_at to YYYY-MM-DDT12:00:00 for log_interaction and create_task, and "
-    "timestamp to YYYY-MM-DDT12:00:00 for log_meal. Also set completed=true on create_task for "
+    "Date handling (IST, UTC+05:30): if the entry starts with [Entry date: YYYY-MM-DD], "
+    "that is the calendar date the events occurred. Set occurred_at to "
+    "YYYY-MM-DDT12:00:00+05:30 for log_interaction and create_task, and timestamp to "
+    "YYYY-MM-DDT12:00:00+05:30 for log_meal. Also set completed=true on create_task for "
     "past entries unless the text implies it is still pending. Omit date fields for today's entries."
 )
 
@@ -51,7 +57,9 @@ _SCOPE_SYSTEMS: dict[str, str] = {
     ),
     "canopy": (
         "You are a terminal assistant embedded in Canopy, a relationship tracking app. "
-        "Use your tools to help the user recall people, review interaction history, and log new interactions. "
+        "All datetimes are IST (Asia/Kolkata). Interaction logs may be past or upcoming based on "
+        "occurred_at — use the timing field from get_recent_interactions when present. "
+        "Use your tools to help the user recall people and review interaction history. "
         "Be concise and terminal-appropriate."
     ),
     "chef": (
@@ -118,6 +126,9 @@ def _coerce_args(name: str, args: dict) -> dict:
             args["satisfaction"] = int(args["satisfaction"])
         except (ValueError, TypeError):
             args.pop("satisfaction", None)
+    for field in ("occurred_at", "timestamp"):
+        if field in args and isinstance(args[field], str):
+            args[field] = ensure_ist_datetime(args[field])
     return args
 
 
