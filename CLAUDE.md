@@ -179,3 +179,25 @@ Diary entries are saved to session history after routing (same as agent/chat).
 ## Future work
 
 See **[docs/DEFERRED.md](docs/DEFERRED.md)** — production sibling-auth. `get_interactions_for_person` shipped 2026-06-17.
+
+---
+
+## UI & Responsive Standards
+
+All UI changes must work correctly across **every** combination of these views before being considered done:
+
+| View | Width | Notes |
+|------|-------|-------|
+| Mobile portrait | ≤ 430 px | Primary design target; no horizontal scroll |
+| Mobile landscape | ≤ 932 px, short viewport | Reflow; critical controls must stay on-screen |
+| Tablet / iPad portrait | 768–1024 px | Input area and message feed should both remain accessible |
+| Tablet / iPad landscape | 1024–1366 px | Same as portrait but wider; avoid dead whitespace beside the terminal |
+| Laptop / desktop | ≥ 1025 px | Full layout |
+
+**Touch targets**: 44 × 44 px minimum on all buttons and interactive controls. Safe-area insets (`env(safe-area-inset-*)`) already applied for notch/Dynamic Island — preserve them.
+
+**Diary compose**: `DiaryCompose` uses a full-screen textarea — on mobile landscape the keyboard pushes the viewport; ensure the header and submit control remain above the fold using `dvh` units or scroll anchoring.
+
+**Terminal font**: JetBrains Mono is the only font in use. Do not introduce variable-weight fonts; keep all sizing in `rem`/`ch` units relative to the mono baseline.
+
+**No localhost**: never add `localhost` or `127.0.0.1` to `CORS_ORIGINS`, `render.yaml`, or Pydantic config defaults. Sibling app URLs (`CIRCUIT_URL`, `CANOPY_URL`, `CHEF_URL`) default to production Render URLs; add localhost values to `.env` for local dev only.
