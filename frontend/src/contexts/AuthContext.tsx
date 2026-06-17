@@ -118,7 +118,13 @@ function AuthBridge({ children }: { children: React.ReactNode }) {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ detail: "Request failed" }));
-        throw new Error(err.detail || "Cortex login failed");
+        const d = err?.detail;
+        const msg = typeof d === "string"
+          ? d
+          : Array.isArray(d)
+            ? (d as Array<{ msg?: string }>).map((e) => e.msg ?? JSON.stringify(e)).join("; ")
+            : "Cortex login failed";
+        throw new Error(msg);
       }
       const data = await res.json();
       setAuthToken(TOKEN_KEY, data.token);
