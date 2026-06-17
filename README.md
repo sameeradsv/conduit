@@ -140,15 +140,15 @@ Falls back to `llama-3.3-70b-versatile` + `llama-3.1-8b-instant` if Groq is unre
 conduit backend (hub)
 │   POST /api/agent/chat  — scope param selects tool subset
 │
-│   read tools × 7    write tools × 3
-│   ─────────────────────────────────────
-│   get_my_tasks           create_task
-│   get_task_summary
-│   get_people             log_interaction
-│   get_recent_interactions
+│   read tools × 8         write tools × 6
+│   ──────────────────────────────────────────
+│   get_my_tasks            create_task
+│   get_task_summary        update_task
+│   get_people              log_interaction
+│   get_recent_interactions create_person
 │   get_interactions_for_person
-│   get_meal_recommendation  log_meal
-│   get_cook_vs_order
+│   get_meal_recommendation log_meal
+│   get_cook_vs_order       update_meal_entry
 │   get_food_log
 │
 ├── circuit  :8001   tasks, summary

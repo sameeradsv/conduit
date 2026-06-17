@@ -67,7 +67,7 @@ On Render, set `CIRCUIT_URL`, `CANOPY_URL`, `CHEF_URL` as environment variables 
 | File | Role |
 |------|------|
 | `backend/app/config.py` | Pydantic settings — sibling URLs, GROQ key, auth, CORS |
-| `backend/app/services/agent_service.py` | Core: diary system prompt, agent system prompt, tool routing, Groq call, failed_generation fallback |
+| `backend/app/services/agent_service.py` | Core: diary system prompt, agent system prompt, tool routing, Groq call, failed_generation fallback, 429 fallback chain, text-format tool call recovery |
 | `backend/app/tools/definitions.py` | Tool schemas (READ_TOOLS, WRITE_TOOLS, SCOPE_TOOLS) |
 | `backend/app/tools/executor.py` | Tool execution — calls sibling app endpoints |
 | `backend/app/tz_utils.py` | IST datetime parsing — diary routing, Canopy/Chef/Circuit write conversions |
@@ -76,7 +76,7 @@ On Render, set `CIRCUIT_URL`, `CANOPY_URL`, `CHEF_URL` as environment variables 
 | `frontend/src/components/TerminalShell.tsx` | Main shell — mode routing, slash command handling, diary/agent/chat dispatch |
 | `frontend/src/components/DiaryCompose.tsx` | Diary input: multi-line, date header, Ctrl+Enter to save |
 | `frontend/src/components/CommandInput.tsx` | Agent/chat input: slash command menu, history navigation |
-| `frontend/src/lib/api.ts` | All fetch calls to the backend, including `streamWakeup` SSE, `saveSession` / `listSessions` (Bearer auth) |
+| `frontend/src/lib/api.ts` | All fetch calls to the backend, including `streamWakeup` SSE, `saveSession` / `listSessions` (Bearer auth), `fetchModels` (live Groq model list) |
 
 ---
 
@@ -86,7 +86,7 @@ On Render, set `CIRCUIT_URL`, `CANOPY_URL`, `CHEF_URL` as environment variables 
 - **Message role prefixes**: `~` AI, `>` user, `#` system, `!` error
 - **Diary suppresses AI prose**: only a structured confirmation is shown — `✓ circuit create_task × 2`
 - **Groq-only backend** — `GROQ_API_KEY` required; multi-provider is **not planned** (see [docs/DEFERRED.md](docs/DEFERRED.md))
-- **Diary model chain**: diary always uses tool-call models in priority order — `llama-3.3-70b-versatile` → `llama-3.1-70b-versatile` → `llama-3.1-8b-instant` — falling back silently on 429 rate limits. Agent mode surfaces 429 as an inline `[rate limit]` error message.
+- **Diary model chain**: diary always uses tool-call models in priority order — `llama-3.3-70b-versatile` → `llama-3.1-8b-instant` — falling back silently on 429 rate limits. Agent mode surfaces 429 as an inline `[rate limit]` error message.
 - **Text-format tool call fallback**: `llama-3.1-8b-instant` sometimes emits `<function=name>{args}</function>` text instead of structured tool calls (finish_reason `"stop"`). `agent_service.py` detects these in both the 400/tool_use_failed path and the normal content path, executes the tools, and streams a real response. No-arg calls (e.g. `get_people`) are also handled.
 - **Conduit as orchestrator only**: sibling apps have no inter-app calls
 - **Mode UI (2026-06)**: `AgentToggle` / `DiaryToggle` removed — mode switching via inline tabs in `TerminalShell` modebar
