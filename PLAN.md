@@ -134,6 +134,7 @@ Auth flow:
 
 - **Groq-only backend**: MVP uses Groq; multi-provider (Claude, GPT-4o, Gemini, Ollama) is a later phase
 - **Diary mode suppresses AI response**: confirmed design — only a structured confirmation is shown, not a full model reply
+- **Terminal UI is Conduit-only** — sibling apps keep `/chat` (native per-app Groq agent); no terminal views or diary routing in Circuit/Canopy/Chef
 - **Conduit as orchestrator only**: circuit/canopy/chef have no inter-app calls; all coordination goes through conduit
 - **Terminal-first UI**: no rounded cards, no icons, JetBrains Mono everywhere, phosphor theme only
 - **AgentToggle / DiaryToggle components**: removed — mode switching is inline tabs in `TerminalShell` modebar (do not restore duplicate toggles)
