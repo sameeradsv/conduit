@@ -255,7 +255,7 @@ async def stream_agent_chat(
         return
 
     if use_tools and choice.finish_reason == "tool_calls":
-        tool_calls = choice.message.tool_calls
+        tool_calls = choice.message.tool_calls or []
 
         groq_messages.append({
             "role": "assistant",

@@ -44,8 +44,8 @@ def _trim_interactions(items: list) -> list:
             "context": i.get("context"),
             "observation": i.get("observation"),
             "outcome": i.get("outcome"),
-            "participants": [p.get("name") for p in i.get("participants", [])],
-            "tags": [t.get("name") for t in i.get("tags", [])],
+            "participants": [p.get("name") for p in (i.get("participants") or [])],
+            "tags": [t.get("name") for t in (i.get("tags") or [])],
         }
         if at_utc is not None:
             entry["timing"] = "past" if at_utc <= now else "upcoming"
