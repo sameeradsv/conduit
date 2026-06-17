@@ -8,6 +8,10 @@ const withPWA = withPWAInit({
   disable: process.env.NODE_ENV === "development",
   register: true,
   fallbacks: { document: "/offline" },
+  workboxOptions: {
+    // Keep /api/* off the document fallback path; agent/diary POST streams must hit the network.
+    navigateFallbackDenylist: [/^\/api\//],
+  },
 });
 
 const nextConfig: NextConfig = {

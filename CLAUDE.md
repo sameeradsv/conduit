@@ -86,7 +86,8 @@ On Render, set `CIRCUIT_URL`, `CANOPY_URL`, `CHEF_URL` as environment variables 
 - **Message role prefixes**: `~` AI, `>` user, `#` system, `!` error
 - **Diary suppresses AI prose**: only a structured confirmation is shown — `✓ circuit create_task × 2`
 - **Groq-only backend** — `GROQ_API_KEY` required; multi-provider is **not planned** (see [docs/DEFERRED.md](docs/DEFERRED.md))
-- **Diary model fixed**: always `llama-3.3-70b-versatile` regardless of user's selected chat model — most reliable for tool calls
+- **Diary model chain**: diary always uses tool-call models in priority order — `llama-3.3-70b-versatile` → `llama-3.1-70b-versatile` → `llama-3.1-8b-instant` — falling back silently on 429 rate limits. Agent mode surfaces 429 as an inline `[rate limit]` error message.
+- **Text-format tool call fallback**: `llama-3.1-8b-instant` sometimes emits `<function=name>{args}</function>` text instead of structured tool calls (finish_reason `"stop"`). `agent_service.py` detects these in both the 400/tool_use_failed path and the normal content path, executes the tools, and streams a real response. No-arg calls (e.g. `get_people`) are also handled.
 - **Conduit as orchestrator only**: sibling apps have no inter-app calls
 - **Mode UI (2026-06)**: `AgentToggle` / `DiaryToggle` removed — mode switching via inline tabs in `TerminalShell` modebar
 - **Session history**: chat/agent/diary turns saved via `saveSession` → `POST /api/history`; `@user` menu + `/sessions` / `/resume <id>` for list/resume/delete
@@ -125,8 +126,8 @@ Chef has no `/api` prefix on sync routes. Response fields differ per app — exe
 
 - `llama-3.3-70b-versatile` (default, used for diary)
 - `llama-3.1-8b-instant`
-- `mixtral-8x7b-32768`
-- `gemma2-9b-it`
+- `llama-3.1-70b-versatile`
+- `qwen-qwq-32b`
 
 ---
 

@@ -76,15 +76,33 @@ _TOOL_CALL_MODELS = {
     "llama-3.1-70b-versatile",
 }
 
-# Diary mode always routes silently via tool calls — use the most reliable
-# tool-call model regardless of the user's selected chat model.
-_DIARY_MODEL = "llama-3.3-70b-versatile"
+# Diary mode always routes silently via tool calls. Try models in order on 429.
+_DIARY_MODEL_CHAIN = [
+    "llama-3.3-70b-versatile",
+    "llama-3.1-70b-versatile",
+    "llama-3.1-8b-instant",
+]
 
-# Matches the old Llama text-format function call that Groq sometimes generates.
-# The model produces several variants: <function=name>{}, <function=name>{},
-# <function=name={}> — so we accept any non-{ characters between name and args
-# and make the closing tag optional.
-_FUNC_RE = re.compile(r"<function=(\w+)[^{]*(\{.*?\})\s*(?:</function>)?", re.DOTALL)
+# Matches text-format function calls that llama-3.1-8b-instant (and others) sometimes generate
+# instead of structured tool calls. Args group is optional — some calls have no args at all.
+# Variants: <function=name>{args}</function>, <function=name></function>, <function=name={}> etc.
+_FUNC_RE = re.compile(r"<function=(\w+)[^{<]*(\{.*?\})?\s*(?:</function>)?", re.DOTALL)
+
+
+async def _call_model(client: AsyncGroq, kwargs: dict, fallback_chain: list | None = None) -> tuple:
+    """Call Groq; on 429 retry through fallback_chain. Returns (response, model_used)."""
+    models = fallback_chain if fallback_chain else [kwargs["model"]]
+    last_exc: APIStatusError | None = None
+    for model_id in models:
+        try:
+            resp = await client.chat.completions.create(**{**kwargs, "model": model_id})
+            return resp, model_id
+        except APIStatusError as exc:
+            if exc.status_code == 429 and fallback_chain:
+                last_exc = exc
+                continue
+            raise
+    raise last_exc  # type: ignore[misc]
 
 
 def _client() -> AsyncGroq:
@@ -113,7 +131,7 @@ def _parse_failed_generation(body: dict) -> list[dict]:
     calls = []
     for name, args_str in _FUNC_RE.findall(fg):
         try:
-            args = json.loads(args_str)
+            args = json.loads(args_str) if args_str else {}
         except json.JSONDecodeError:
             continue
         calls.append({"name": name, "args": args})
@@ -208,7 +226,7 @@ async def stream_agent_chat(
 
     groq_messages = _build_messages(messages, system)
 
-    effective_model = _DIARY_MODEL if diary else model
+    effective_model = _DIARY_MODEL_CHAIN[0] if diary else model
     use_tools = effective_model in _TOOL_CALL_MODELS
     create_kwargs: dict = dict(
         model=effective_model,
@@ -223,10 +241,17 @@ async def stream_agent_chat(
 
     # Attempt the structured tool call; fall back to parsing failed_generation
     # when Groq rejects the model's text-format function call (400/tool_use_failed).
+    # Diary mode retries through _DIARY_MODEL_CHAIN on 429; agent mode surfaces the error.
+    fallback = _DIARY_MODEL_CHAIN if diary else None
     try:
-        response = await client.chat.completions.create(**create_kwargs)
+        response, effective_model = await _call_model(client, create_kwargs, fallback)
         choice = response.choices[0]
     except APIStatusError as exc:
+        if exc.status_code == 429:
+            body = exc.body if isinstance(exc.body, dict) else {}
+            msg = ((body.get("error") or {}).get("message") or "").split(". ")[0]
+            yield {"delta": f"[rate limit] {msg or 'Daily token limit reached — try again later.'}"}
+            return
         if exc.status_code != 400:
             raise
         body = exc.body if isinstance(exc.body, dict) else {}
@@ -298,13 +323,21 @@ async def stream_agent_chat(
         if diary:
             yield {"confirmation": confirmations}
         else:
-            stream = await client.chat.completions.create(
-                model=effective_model,
-                messages=groq_messages,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                stream=True,
-            )
+            try:
+                stream = await client.chat.completions.create(
+                    model=effective_model,
+                    messages=groq_messages,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    stream=True,
+                )
+            except APIStatusError as exc:
+                if exc.status_code == 429:
+                    body = exc.body if isinstance(exc.body, dict) else {}
+                    msg = ((body.get("error") or {}).get("message") or "").split(". ")[0]
+                    yield {"delta": f"[rate limit] {msg or 'Daily token limit reached — try again later.'}"}
+                    return
+                raise
             async for chunk in stream:
                 delta = chunk.choices[0].delta.content
                 if delta:
@@ -315,5 +348,41 @@ async def stream_agent_chat(
 
     else:
         content = choice.message.content or ""
-        if content:
+        # llama-3.1-8b-instant sometimes emits text-format function calls with finish_reason="stop"
+        # instead of structured tool_calls. Detect and execute them rather than echoing the raw text.
+        text_calls = [
+            {"name": name, "args": json.loads(args_str) if args_str else {}}
+            for name, args_str in _FUNC_RE.findall(content)
+            if name  # skip empty matches
+        ]
+        if text_calls:
+            for tc in text_calls:
+                name, args = tc["name"], _coerce_args(tc["name"], tc["args"])
+                yield {"status": "calling_tool", "tool": name}
+                result_str = await execute_tool(name, args, sibling_token)
+                groq_messages.append({
+                    "role": "tool",
+                    "tool_call_id": f"fallback_{name}",
+                    "content": result_str,
+                })
+            try:
+                stream = await client.chat.completions.create(
+                    model=effective_model,
+                    messages=groq_messages,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    stream=True,
+                )
+            except APIStatusError as exc:
+                if exc.status_code == 429:
+                    body = exc.body if isinstance(exc.body, dict) else {}
+                    msg = ((body.get("error") or {}).get("message") or "").split(". ")[0]
+                    yield {"delta": f"[rate limit] {msg or 'Daily token limit reached — try again later.'}"}
+                    return
+                raise
+            async for chunk in stream:
+                delta = chunk.choices[0].delta.content
+                if delta:
+                    yield {"delta": delta}
+        elif content:
             yield {"delta": content}

@@ -132,8 +132,8 @@ App: http://localhost:3000
 |----|-------|
 | `llama-3.3-70b-versatile` | default — best quality, supports tool calls |
 | `llama-3.1-8b-instant` | fast, supports tool calls |
-| `mixtral-8x7b-32768` | long context |
-| `gemma2-9b-it` | lightweight |
+| `llama-3.1-70b-versatile` | long context (128K) |
+| `qwen-qwq-32b` | reasoning model |
 
 ---
 

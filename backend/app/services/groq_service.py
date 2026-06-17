@@ -8,8 +8,8 @@ from app.schemas import ChatMessage
 SUPPORTED_MODELS = [
     {"id": "llama-3.3-70b-versatile", "label": "llama-3.3-70b",       "context": 128000},
     {"id": "llama-3.1-8b-instant",    "label": "llama-3.1-8b-instant", "context": 131072},
-    {"id": "mixtral-8x7b-32768",      "label": "mixtral-8x7b",         "context": 32768},
-    {"id": "gemma2-9b-it",            "label": "gemma2-9b",            "context": 8192},
+    {"id": "llama-3.1-70b-versatile",  "label": "llama-3.1-70b",        "context": 131072},
+    {"id": "qwen-qwq-32b",            "label": "qwen-qwq-32b",         "context": 131072},
 ]
 
 VALID_MODEL_IDS = {m["id"] for m in SUPPORTED_MODELS}

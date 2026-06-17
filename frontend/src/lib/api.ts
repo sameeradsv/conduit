@@ -72,8 +72,8 @@ export interface Message {
 export const MODELS = [
   { id: "llama-3.3-70b-versatile", label: "llama-3.3-70b" },
   { id: "llama-3.1-8b-instant",    label: "llama-3.1-8b-instant" },
-  { id: "mixtral-8x7b-32768",      label: "mixtral-8x7b" },
-  { id: "gemma2-9b-it",            label: "gemma2-9b" },
+  { id: "llama-3.1-70b-versatile",  label: "llama-3.1-70b" },
+  { id: "qwen-qwq-32b",            label: "qwen-qwq-32b" },
 ] as const;
 
 export type ModelId = (typeof MODELS)[number]["id"];
