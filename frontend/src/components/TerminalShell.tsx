@@ -366,7 +366,7 @@ export function TerminalShell() {
           { role: "user", content: digestPrompt },
         ];
 
-        const digestId = addMsg({ role: "assistant", content: "", streaming: true });
+        let digestId: string | null = null;
         let digestContent = "";
         abortRef.current = new AbortController();
 
@@ -383,35 +383,46 @@ export function TerminalShell() {
             abortRef.current.signal,
             (tool) => addSystem(`~ querying ${tool.replace(/_/g, " ")}...`),
           )) {
-            digestContent += chunk;
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === digestId ? { ...m, content: digestContent } : m,
-              ),
-            );
+            if (digestId === null) {
+              digestId = addMsg({ role: "assistant", content: chunk, streaming: true });
+              digestContent = chunk;
+            } else {
+              digestContent += chunk;
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === digestId ? { ...m, content: digestContent } : m,
+                ),
+              );
+            }
             setTokenCount((n) => n + 1);
           }
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === digestId ? { ...m, streaming: false } : m,
-            ),
-          );
+          if (digestId !== null) {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === digestId ? { ...m, streaming: false } : m,
+              ),
+            );
+          }
           setStatus("ready");
         } catch (err: unknown) {
           const isAbort = err instanceof Error && err.name === "AbortError";
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === digestId
-                ? {
-                    ...m,
-                    content: isAbort
-                      ? digestContent || "(cancelled)"
-                      : `! ${err instanceof Error ? err.message : "unknown error"}`,
-                    streaming: false,
-                  }
-                : m,
-            ),
-          );
+          if (digestId !== null) {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === digestId
+                  ? {
+                      ...m,
+                      content: isAbort
+                        ? digestContent || "(cancelled)"
+                        : `! ${err instanceof Error ? err.message : "unknown error"}`,
+                      streaming: false,
+                    }
+                  : m,
+              ),
+            );
+          } else if (!isAbort) {
+            addMsg({ role: "system", content: `! ${err instanceof Error ? err.message : "unknown error"}` });
+          }
           setStatus(isAbort ? "ready" : "error");
           if (!isAbort) setTimeout(() => setStatus("ready"), 3000);
         }
@@ -441,7 +452,7 @@ export function TerminalShell() {
             ? localStorage.getItem("conduit_auth_token")
             : null;
         abortRef.current = new AbortController();
-        const aiId = addMsg({ role: "assistant", content: "", streaming: true });
+        let aiId: string | null = null;
         let fullContent = "";
         try {
           for await (const chunk of streamAgentChat(
@@ -454,25 +465,36 @@ export function TerminalShell() {
             false,
             scoped.scope,
           )) {
-            fullContent += chunk;
-            setMessages((prev) =>
-              prev.map((m) => (m.id === aiId ? { ...m, content: fullContent } : m)),
-            );
+            if (aiId === null) {
+              aiId = addMsg({ role: "assistant", content: chunk, streaming: true });
+              fullContent = chunk;
+            } else {
+              fullContent += chunk;
+              setMessages((prev) =>
+                prev.map((m) => (m.id === aiId ? { ...m, content: fullContent } : m)),
+              );
+            }
             setTokenCount((n) => n + 1);
           }
-          setMessages((prev) =>
-            prev.map((m) => (m.id === aiId ? { ...m, streaming: false } : m)),
-          );
+          if (aiId !== null) {
+            setMessages((prev) =>
+              prev.map((m) => (m.id === aiId ? { ...m, streaming: false } : m)),
+            );
+          }
           setStatus("ready");
         } catch (err: unknown) {
           const isAbort = err instanceof Error && err.name === "AbortError";
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === aiId
-                ? { ...m, content: isAbort ? fullContent || "(cancelled)" : `! ${err instanceof Error ? err.message : "unknown error"}`, streaming: false }
-                : m,
-            ),
-          );
+          if (aiId !== null) {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === aiId
+                  ? { ...m, content: isAbort ? fullContent || "(cancelled)" : `! ${err instanceof Error ? err.message : "unknown error"}`, streaming: false }
+                  : m,
+              ),
+            );
+          } else if (!isAbort) {
+            addMsg({ role: "system", content: `! ${err instanceof Error ? err.message : "unknown error"}` });
+          }
           setStatus(isAbort ? "ready" : "error");
           if (!isAbort) setTimeout(() => setStatus("ready"), 3000);
         }
@@ -535,7 +557,9 @@ export function TerminalShell() {
         return;
       }
 
-      const aiId = addMsg({ role: "assistant", content: "", streaming: true });
+      // Create the assistant slot lazily on the first delta so that
+      // tool-status messages (addSystem) are appended before it, not after.
+      let aiId: string | null = null;
       let fullContent = "";
 
       const chatStream =
@@ -551,17 +575,24 @@ export function TerminalShell() {
 
       try {
         for await (const chunk of chatStream) {
-          fullContent += chunk;
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === aiId ? { ...m, content: fullContent } : m,
-            ),
-          );
+          if (aiId === null) {
+            aiId = addMsg({ role: "assistant", content: chunk, streaming: true });
+            fullContent = chunk;
+          } else {
+            fullContent += chunk;
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === aiId ? { ...m, content: fullContent } : m,
+              ),
+            );
+          }
           setTokenCount((n) => n + 1);
         }
-        setMessages((prev) =>
-          prev.map((m) => (m.id === aiId ? { ...m, streaming: false } : m)),
-        );
+        if (aiId !== null) {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === aiId ? { ...m, streaming: false } : m)),
+          );
+        }
         setStatus("ready");
         saveSession(
           [
@@ -572,19 +603,23 @@ export function TerminalShell() {
         );
       } catch (err: unknown) {
         const isAbort = err instanceof Error && err.name === "AbortError";
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === aiId
-              ? {
-                  ...m,
-                  content: isAbort
-                    ? fullContent || "(cancelled)"
-                    : `! ${err instanceof Error ? err.message : "unknown error"}`,
-                  streaming: false,
-                }
-              : m,
-          ),
-        );
+        if (aiId !== null) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === aiId
+                ? {
+                    ...m,
+                    content: isAbort
+                      ? fullContent || "(cancelled)"
+                      : `! ${err instanceof Error ? err.message : "unknown error"}`,
+                    streaming: false,
+                  }
+                : m,
+            ),
+          );
+        } else if (!isAbort) {
+          addMsg({ role: "system", content: `! ${err instanceof Error ? err.message : "unknown error"}` });
+        }
         setStatus(isAbort ? "ready" : "error");
         if (!isAbort) setTimeout(() => setStatus("ready"), 3000);
       }
