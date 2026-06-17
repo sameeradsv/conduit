@@ -229,7 +229,7 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
             elif name == "log_interaction":
                 # Resolve person names → canopy person IDs
                 participant_ids = []
-                for person_name in args.get("person_names", []):
+                for person_name in (args.get("person_names") or []):
                     r = await client.get(
                         f"{settings.canopy_url}/api/people",
                         params={"q": person_name},
@@ -251,7 +251,7 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
                 payload = {
                     "observation": args["observation"],
                     "participant_ids": participant_ids,
-                    "tag_names": args.get("tag_names", []),
+                    "tag_names": args.get("tag_names") or [],
                 }
                 for field in ("context", "outcome"):
                     if args.get(field):
