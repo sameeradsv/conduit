@@ -45,6 +45,42 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue>(null as unknown as AuthContextValue);
 
+function AuthBootScreen() {
+  return (
+    <div
+      style={{
+        minHeight: "100dvh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "var(--bg)",
+      }}
+    >
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+        <div className="brand" style={{ fontSize: "var(--fs-xl)" }}>
+          conduit
+        </div>
+        <div style={{ display: "flex", gap: 6 }}>
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="animate-pulse"
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                background: "var(--ink)",
+                opacity: 0.55,
+                animationDelay: `${i * 0.15}s`,
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AuthBridge({ children }: { children: React.ReactNode }) {
   const { user, loading, logout, refetch } = useCortexAuth();
   const router = useRouter();
@@ -92,22 +128,23 @@ function AuthBridge({ children }: { children: React.ReactNode }) {
     [refetch],
   );
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        isAuthenticated: !!user,
-        login,
-        loginWithCortex,
-        register,
-        logout,
-        refetch,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  const value = {
+    user,
+    loading,
+    isAuthenticated: !!user,
+    login,
+    loginWithCortex,
+    register,
+    logout,
+    refetch,
+  };
+
+  let content: React.ReactNode = children;
+  if (!isLogin && (loading || !user)) {
+    content = <AuthBootScreen />;
+  }
+
+  return <AuthContext.Provider value={value}>{content}</AuthContext.Provider>;
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
