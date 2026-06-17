@@ -74,7 +74,7 @@ On Render, set `CIRCUIT_URL`, `CANOPY_URL`, `CHEF_URL` as environment variables 
 | `frontend/src/components/TerminalShell.tsx` | Main shell — mode routing, slash command handling, diary/agent/chat dispatch |
 | `frontend/src/components/DiaryCompose.tsx` | Diary input: multi-line, date header, Ctrl+Enter to save |
 | `frontend/src/components/CommandInput.tsx` | Agent/chat input: slash command menu, history navigation |
-| `frontend/src/lib/api.ts` | All fetch calls to the backend, including `streamWakeup` SSE |
+| `frontend/src/lib/api.ts` | All fetch calls to the backend, including `streamWakeup` SSE, `saveSession` / `listSessions` (Bearer auth) |
 
 ---
 
@@ -86,6 +86,8 @@ On Render, set `CIRCUIT_URL`, `CANOPY_URL`, `CHEF_URL` as environment variables 
 - **Groq-only backend** for MVP; multi-provider (Claude, GPT-4o, Gemini, Ollama) is a future phase
 - **Diary model fixed**: always `llama-3.3-70b-versatile` regardless of user's selected chat model — most reliable for tool calls
 - **Conduit as orchestrator only**: sibling apps have no inter-app calls
+- **Mode UI (2026-06)**: `AgentToggle` / `DiaryToggle` removed — mode switching via inline tabs in `TerminalShell` modebar
+- **Session history**: chat/agent turns saved to `POST /api/history`; `@user` menu + `/sessions` / `/resume <id>` for list/resume/delete (diary not saved yet)
 
 ---
 
@@ -113,7 +115,7 @@ Chef has no `/api` prefix on sync routes. Response fields differ per app — exe
 
 ## Slash commands
 
-`/help`, `/chat`, `/agent`, `/diary`, `/model <id>`, `/system <text>`, `/clear`, `/logout`, `/models`, `/digest`, `/wakeup`
+`/help`, `/chat`, `/agent`, `/diary`, `/model <id>`, `/system <text>`, `/clear`, `/logout`, `/models`, `/digest`, `/wakeup`, `/sessions`, `/resume <id>`
 
 ---
 
@@ -142,6 +144,8 @@ The wakeup router retries every 10s for up to 90s to handle Render cold-start 50
 
 **Sibling app auth in production** — conduit passes `conduit_auth_token` as Bearer to sibling apps. This works when all apps share the same Cortex instance. If they don't, sibling apps will reject the token. No fix designed yet.
 
+**Diary session save** — diary mode does not call `saveSession` after routing (chat/agent do). Optional follow-up.
+
 ---
 
 ## Implemented tools
@@ -162,13 +166,17 @@ The wakeup router retries every 10s for up to 90s to handle Render cold-start 50
 | Tool | Endpoint |
 |------|----------|
 | `create_task` | circuit `POST /api/tasks` |
+| `update_task` | circuit `PATCH /api/tasks/{id}` |
 | `log_interaction` | canopy `POST /api/interactions` |
+| `create_person` | canopy `POST /api/people` |
 | `log_meal` | chef `POST /history` |
+| `update_meal_entry` | chef `PATCH /history/{id}` |
+
+Diary entries are saved to session history after routing (same as agent/chat).
 
 ---
 
-## Future work (Phase D)
+## Future work
 
-- `update_task` — circuit `PATCH /api/tasks/{id}`
-- `create_person` — canopy `POST /api/people`
-- `update_meal_entry` — chef `PATCH /history/{id}`
+- Multi-provider models (Claude, GPT-4o, Gemini, Ollama)
+- Production Cortex sibling-auth unification when apps don't share one Cortex instance

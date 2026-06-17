@@ -22,7 +22,7 @@ The same terminal-like shell is also available inside each sibling app at `/chat
 - `POST /api/agent/chat` — tool-calling agent mode (with optional `diary: true` flag)
 - `GET /api/models`
 - Full auth layer (local users + Cortex fallback)
-- Chat history save/load
+- Chat history **save**, **list**, **resume**, **delete** on backend + frontend (`@user` menu, `/sessions`, `/resume <id>`)
 
 #### Agent mode — read tools (all wired, all tested)
 | Tool | Source | What it fetches |
@@ -44,9 +44,8 @@ The same terminal-like shell is also available inside each sibling app at `/chat
 | `log_meal` | chef `POST /history` | meal decision with cuisine, satisfaction |
 
 #### Frontend
-- Three chat modes: `chat` / `agent` / `diary` (persisted to localStorage)
-- AgentToggle + DiaryToggle buttons in topbar
-- Slash commands: `/help`, `/chat`, `/agent`, `/diary`, `/model`, `/system`, `/clear`, `/logout`, `/models`
+- Three chat modes: `chat` / `agent` / `diary` (persisted to localStorage; **inline mode tabs** in `TerminalShell` topbar)
+- Slash commands: `/help`, `/chat`, `/agent`, `/diary`, `/model`, `/system`, `/clear`, `/logout`, `/models`, `/sessions`, `/resume`
 - `/digest` command: fetches daily briefing from all three apps
 - Diary mode: suppresses AI response, shows confirmation summary (`✓ circuit create_task × 2`)
 - PWA installable, deployed on GitHub Pages + Render
@@ -96,19 +95,21 @@ Conduit passes `conduit_auth_token` as the `sibling_token` to circuit/canopy/che
 - Conduit to pass credentials and receive per-app tokens (not yet designed)
 
 #### 2. Sibling URLs are hardcoded to localhost
-**File:** `backend/app/config.py`  
-`circuit_url = "http://localhost:8001"` etc. — will fail on Render unless overridden via env vars. Need `CIRCUIT_URL`, `CANOPY_URL`, `CHEF_URL` env vars set on the Render dashboard.
+**Resolved for production:** set `CIRCUIT_URL`, `CANOPY_URL`, `CHEF_URL` on Render. Local dev uses `.env` (see `backend/.env.example`).
 
----
+#### 3. Diary session history
+**Resolved (2026-06):** Diary mode calls `saveSession` after routing so diary threads appear in `/sessions` history.
 
 ### ⬜ Future work
 
-#### Phase D — Additional write tools
-Currently only three write tools exist. Missing:
-- `update_task` — mark a task complete, change effort/urgency (circuit `PATCH /api/tasks/{id}`)
-- `create_person` — add a new contact in Canopy (canopy `POST /api/people`)
-- `get_interactions_for_person` — already in executor but could use a dedicated tool with person resolution by name
-- `update_meal_entry` — correct a logged meal (chef `PATCH /history/{id}`)
+- Multi-provider models (Claude, GPT-4o, Gemini, Ollama)
+- Production Cortex sibling-auth unification when apps don't share one Cortex instance
+- `get_interactions_for_person` — dedicated tool with person resolution by name (optional)
+
+#### Phase D — Additional write tools (shipped 2026-06)
+- [x] `update_task` — circuit `PATCH /api/tasks/{id}`
+- [x] `create_person` — canopy `POST /api/people`
+- [x] `update_meal_entry` — chef `PATCH /history/{id}`
 
 ---
 
@@ -135,4 +136,6 @@ Auth flow:
 - **Diary mode suppresses AI response**: confirmed design — only a structured confirmation is shown, not a full model reply
 - **Conduit as orchestrator only**: circuit/canopy/chef have no inter-app calls; all coordination goes through conduit
 - **Terminal-first UI**: no rounded cards, no icons, JetBrains Mono everywhere, phosphor theme only
-- **Single theme (phosphor)**: terminal/light theme removed; Dancing Script replaces Caveat for diary handwriting font
+- **AgentToggle / DiaryToggle components**: removed — mode switching is inline tabs in `TerminalShell` modebar (do not restore duplicate toggles)
+
+---

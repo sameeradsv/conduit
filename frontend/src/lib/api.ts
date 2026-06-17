@@ -1,5 +1,15 @@
+import { getToken } from "./auth";
+
 const _API = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
 const apiUrl = (path: string) => (_API ? `${_API}${path}` : path);
+
+function authHeaders(json = false): HeadersInit {
+  const headers: Record<string, string> = {};
+  if (json) headers["Content-Type"] = "application/json";
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
+}
 
 export type Role = "user" | "assistant" | "system";
 
@@ -18,7 +28,7 @@ export async function saveSession(
   try {
     await fetch(apiUrl("/api/history"), {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(true),
       body: JSON.stringify({ messages, model }),
     });
   } catch {
@@ -28,12 +38,30 @@ export async function saveSession(
 
 export async function listSessions(): Promise<SavedSession[]> {
   try {
-    const res = await fetch(apiUrl("/api/history"));
+    const res = await fetch(apiUrl("/api/history"), {
+      headers: authHeaders(),
+    });
     if (!res.ok) return [];
     return res.json();
   } catch {
     return [];
   }
+}
+
+export async function getSession(id: number): Promise<SavedSession> {
+  const res = await fetch(apiUrl(`/api/history/${id}`), {
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function deleteSession(id: number): Promise<void> {
+  const res = await fetch(apiUrl(`/api/history/${id}`), {
+    method: "DELETE",
+    headers: authHeaders(),
+  });
+  if (!res.ok && res.status !== 204) throw new Error(`HTTP ${res.status}`);
 }
 
 export interface Message {

@@ -13,12 +13,17 @@ import {
   streamAgentChat,
   streamWakeup,
   saveSession,
+  listSessions,
+  getSession,
+  deleteSession,
   type Message,
   type ModelId,
   type ConfirmationItem,
+  type SavedSession,
   MODELS,
 } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { getToken } from "@/lib/auth";
 import type { UIMessage } from "./MessageRow";
 
 type ChatMode = "chat" | "agent" | "diary";
@@ -47,6 +52,7 @@ const HELP_TEXT = `conduit — available commands:
   /diary             toggle diary mode (log entries silently, no response)
   /digest            fetch a daily briefing from all apps
   /wakeup            ping circuit, canopy, and chef to wake them from idle
+  /sessions          list saved chat sessions (sign in required)
   /passkey           enable biometric sign-in on this device
   /clear             clear chat history
   /logout            sign out`;
@@ -56,8 +62,11 @@ const MODELS_TEXT =
 
 const TOOL_APP: Record<string, string> = {
   create_task: "circuit",
+  update_task: "circuit",
   log_interaction: "canopy",
+  create_person: "canopy",
   log_meal: "chef",
+  update_meal_entry: "chef",
 };
 
 function formatConfirmation(results: ConfirmationItem[]): string {
@@ -112,6 +121,8 @@ export function TerminalShell() {
   const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM);
   const [chatMode, setChatMode] = useState<ChatMode>(loadMode);
   const [userOpen, setUserOpen] = useState(false);
+  const [sessions, setSessions] = useState<SavedSession[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const uref = useRef<HTMLDivElement>(null);
 
@@ -123,6 +134,15 @@ export function TerminalShell() {
     document.addEventListener("pointerdown", off, true);
     return () => document.removeEventListener("pointerdown", off, true);
   }, [userOpen]);
+
+  useEffect(() => {
+    if (!userOpen || !user) return;
+    setSessionsLoading(true);
+    listSessions()
+      .then(setSessions)
+      .catch(() => setSessions([]))
+      .finally(() => setSessionsLoading(false));
+  }, [userOpen, user]);
 
   const setMode = useCallback((mode: ChatMode) => {
     setChatMode(mode);
@@ -138,6 +158,43 @@ export function TerminalShell() {
   const addSystem = useCallback(
     (content: string) => addMsg({ role: "system", content }),
     [addMsg],
+  );
+
+  const resumeSession = useCallback(
+    async (id: number) => {
+      try {
+        const session = await getSession(id);
+        const modelId = MODELS.find((m) => m.id === session.model)?.id ?? model;
+        setModel(modelId);
+        setMessages([
+          { id: uid(), role: "system", content: `~ resumed: ${session.title}` },
+          ...session.messages
+            .filter((m) => m.role === "user" || m.role === "assistant")
+            .map((m) => ({
+              id: uid(),
+              role: m.role as Message["role"],
+              content: m.content,
+            })),
+        ]);
+        setTokenCount(0);
+        setUserOpen(false);
+      } catch (err) {
+        addSystem(`! ${err instanceof Error ? err.message : "could not load session"}`);
+      }
+    },
+    [addSystem, model],
+  );
+
+  const removeSession = useCallback(
+    async (id: number) => {
+      try {
+        await deleteSession(id);
+        setSessions((prev) => prev.filter((s) => s.id !== id));
+      } catch (err) {
+        addSystem(`! ${err instanceof Error ? err.message : "delete failed"}`);
+      }
+    },
+    [addSystem],
   );
 
   const handleSlashCommand = useCallback(
@@ -200,11 +257,45 @@ export function TerminalShell() {
         case "/logout":
           logout();
           return true;
+        case "/sessions": {
+          if (!user) {
+            addSystem("! sign in to view saved sessions");
+            return true;
+          }
+          listSessions()
+            .then((list) => {
+              if (list.length === 0) {
+                addSystem("~ no saved sessions yet");
+                return;
+              }
+              addSystem(
+                "~ saved sessions:\n" +
+                  list
+                    .map(
+                      (s) =>
+                        `  #${s.id}  ${s.title.slice(0, 48)}  (${s.created_at.slice(0, 10)})`,
+                    )
+                    .join("\n") +
+                  "\n\n/resume <id> to load · pick from @user menu",
+              );
+            })
+            .catch(() => addSystem("! could not load sessions"));
+          return true;
+        }
+        case "/resume": {
+          const id = Number(rest[0]);
+          if (!id) {
+            addSystem("! usage: /resume <id>");
+            return true;
+          }
+          void resumeSession(id);
+          return true;
+        }
         default:
           return false;
       }
     },
-    [addMsg, addSystem, logout, chatMode, setMode],
+    [addMsg, addSystem, logout, chatMode, setMode, user, resumeSession],
   );
 
   const handleSend = useCallback(
@@ -393,14 +484,12 @@ export function TerminalShell() {
         { role: "user", content: trimmed },
       ];
 
-      const siblingToken =
-        typeof window !== "undefined"
-          ? localStorage.getItem("conduit_auth_token")
-          : null;
+      const siblingToken = getToken();
 
       abortRef.current = new AbortController();
 
       if (chatMode === "diary") {
+        let diaryConfirmation = "";
         try {
           for await (const _ of streamAgentChat(
             history,
@@ -408,10 +497,22 @@ export function TerminalShell() {
             siblingToken,
             abortRef.current.signal,
             undefined,
-            (results) => addSystem(formatConfirmation(results)),
+            (results) => {
+              diaryConfirmation = formatConfirmation(results);
+              addSystem(diaryConfirmation);
+            },
             true,
           )) { /* diary mode: no streaming deltas */ }
           setStatus("ready");
+          if (diaryConfirmation) {
+            saveSession(
+              [
+                { role: "user", content: trimmed },
+                { role: "assistant", content: diaryConfirmation },
+              ],
+              model,
+            );
+          }
         } catch (err: unknown) {
           const isAbort = err instanceof Error && err.name === "AbortError";
           if (!isAbort) {
@@ -506,8 +607,41 @@ export function TerminalShell() {
                 <span className="caret">▾</span>
               </button>
               {userOpen && (
-                <div className="menu">
-                  <div className="head">─── session ───</div>
+                <div className="menu" style={{ minWidth: "14rem", maxWidth: "20rem" }}>
+                  <div className="head">─── history ───</div>
+                  {sessionsLoading && (
+                    <div className="head" style={{ borderBottom: "none" }}>loading…</div>
+                  )}
+                  {!sessionsLoading && sessions.length === 0 && (
+                    <div className="head" style={{ borderBottom: "none", fontWeight: 400 }}>
+                      no saved chats yet
+                    </div>
+                  )}
+                  {sessions.slice(0, 8).map((s) => (
+                    <div key={s.id} style={{ display: "flex", gap: 4, alignItems: "stretch" }}>
+                      <button
+                        type="button"
+                        style={{ flex: 1, textAlign: "left" }}
+                        onClick={() => void resumeSession(s.id)}
+                        title={s.title}
+                      >
+                        <span className="marker">›</span>
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {s.title.slice(0, 36) || "untitled"}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void removeSession(s.id)}
+                        title="Delete session"
+                        style={{ padding: "0 6px", color: "var(--err)" }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                  <div className="sep" />
+                  <div className="head">─── account ───</div>
                   <button
                     onClick={() => {
                       setUserOpen(false);

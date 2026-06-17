@@ -162,6 +162,16 @@ def _diary_summary(name: str, args: dict, result: dict) -> str:
         if detail:
             return _truncate_summary(f"{decision}: {detail}")
         return _truncate_summary(decision)
+    if name == "update_task":
+        text = (result.get("text") or args.get("text") or f"task #{args.get('task_id')}").strip()
+        if args.get("completed") or result.get("completed"):
+            return _truncate_summary(f"{text} (done)")
+        return _truncate_summary(text)
+    if name == "create_person":
+        return _truncate_summary(result.get("name") or args.get("name") or "person")
+    if name == "update_meal_entry":
+        detail = result.get("recipe_name") or args.get("recipe_name") or result.get("decision") or "meal entry"
+        return _truncate_summary(str(detail))
     return name
 
 

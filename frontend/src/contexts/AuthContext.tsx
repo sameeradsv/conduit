@@ -9,8 +9,7 @@ import {
 import type { AuthUser } from "@shared/cortex";
 import { useRouter, usePathname } from "next/navigation";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:8000";
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
 const CORTEX_BASE =
   process.env.NEXT_PUBLIC_CORTEX_URL?.replace(/\/$/, "") ?? "";
 const TOKEN_KEY = "conduit_auth_token";

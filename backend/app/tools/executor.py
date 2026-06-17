@@ -258,6 +258,62 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
                     "cuisine": args.get("cuisine"),
                 })
 
+            elif name == "update_task":
+                task_id = args["task_id"]
+                payload: dict = {}
+                for field in ("text", "completed", "tag", "effort", "urgency", "importance"):
+                    if args.get(field) is not None:
+                        payload[field] = args[field]
+                if args.get("scheduled_at"):
+                    try:
+                        payload["scheduled_at"] = to_circuit_epoch_ms(args["scheduled_at"])
+                    except ValueError:
+                        pass
+                r = await client.patch(
+                    f"{settings.circuit_url}/api/tasks/{task_id}",
+                    json=payload,
+                    headers=h,
+                )
+                r.raise_for_status()
+                task = r.json()
+                return json.dumps({"id": task.get("id"), "text": task.get("text"), "completed": task.get("completed")})
+
+            elif name == "create_person":
+                payload = {"name": args["name"]}
+                for field in ("relationship", "notes"):
+                    if args.get(field):
+                        payload[field] = args[field]
+                r = await client.post(f"{settings.canopy_url}/api/people", json=payload, headers=h)
+                r.raise_for_status()
+                person = r.json()
+                return json.dumps({"id": person.get("id"), "name": person.get("name")})
+
+            elif name == "update_meal_entry":
+                entry_id = args["entry_id"]
+                payload: dict = {}
+                for field in ("decision", "recipe_name", "cuisine"):
+                    if args.get(field) is not None:
+                        payload[field] = args[field]
+                if args.get("timestamp") is not None:
+                    try:
+                        payload["timestamp"] = to_chef_timestamp(args["timestamp"])
+                    except ValueError:
+                        pass
+                if args.get("satisfaction") is not None:
+                    payload["satisfaction"] = int(args["satisfaction"])
+                r = await client.patch(
+                    f"{settings.chef_url}/history/{entry_id}",
+                    json=payload,
+                    headers=h,
+                )
+                r.raise_for_status()
+                entry = r.json()
+                return json.dumps({
+                    "id": entry.get("id"),
+                    "decision": entry.get("decision"),
+                    "recipe_name": entry.get("recipe_name"),
+                })
+
             else:
                 return json.dumps({"error": f"unknown tool: {name}"})
 

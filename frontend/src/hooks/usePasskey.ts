@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getToken } from "@/lib/auth";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:8000";
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
 
 const PASSKEY_KEY = "conduit_passkey_registered";
 
@@ -22,7 +22,7 @@ export function usePasskey() {
 
   async function registerPasskey(): Promise<void> {
     const { startRegistration } = await import("@simplewebauthn/browser");
-    const token = localStorage.getItem("conduit_auth_token");
+    const token = getToken();
     if (!token) throw new Error("Not authenticated");
 
     const beginRes = await fetch(`${API_BASE}/auth/webauthn/register/begin`, {

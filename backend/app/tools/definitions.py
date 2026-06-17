@@ -269,6 +269,89 @@ WRITE_TOOLS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "update_task",
+            "description": (
+                "Update an existing Circuit task by ID — mark complete, change text, urgency, "
+                "importance, tag, effort, or scheduled time."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "task_id": {
+                        "type": "integer",
+                        "description": "Circuit task ID to update",
+                    },
+                    "text": {"type": "string", "description": "New task description"},
+                    "completed": {"type": "boolean", "description": "Mark done or reopen"},
+                    "tag": {"type": "string"},
+                    "effort": {"type": "string", "enum": ["low", "medium", "high"]},
+                    "urgency": {"type": "number", "description": "0.0–1.0"},
+                    "importance": {"type": "number", "description": "0.0–1.0"},
+                    "scheduled_at": {
+                        "type": "string",
+                        "description": "New scheduled time, IST (YYYY-MM-DDTHH:MM:SS+05:30)",
+                    },
+                },
+                "required": ["task_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_person",
+            "description": (
+                "Add a new person to Canopy (relationship tracking). Use when the user mentions "
+                "someone not yet in their people list."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Person's name"},
+                    "relationship": {
+                        "type": "string",
+                        "description": "Relationship type (e.g. friend, colleague, family)",
+                    },
+                    "notes": {"type": "string", "description": "Optional notes about this person"},
+                },
+                "required": ["name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "update_meal_entry",
+            "description": (
+                "Update an existing Chef food log entry by ID — change decision type, dish name, "
+                "cuisine, satisfaction, or timestamp."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "entry_id": {
+                        "type": "string",
+                        "description": "Chef history entry ID",
+                    },
+                    "decision": {
+                        "type": "string",
+                        "enum": ["cook", "order", "eat_out"],
+                    },
+                    "recipe_name": {"type": "string"},
+                    "cuisine": {"type": "string"},
+                    "satisfaction": {"type": "integer", "description": "1–5"},
+                    "timestamp": {
+                        "type": "string",
+                        "description": "When the meal occurred, IST",
+                    },
+                },
+                "required": ["entry_id"],
+            },
+        },
+    },
 ]
 
 # Scope-filtered tool sets for embedded per-app chat
@@ -278,20 +361,20 @@ SCOPE_TOOLS: dict[str, list] = {
         if t["function"]["name"] in ("get_my_tasks", "get_task_summary")
     ] + [
         t for t in WRITE_TOOLS
-        if t["function"]["name"] == "create_task"
+        if t["function"]["name"] in ("create_task", "update_task")
     ],
     "canopy": [
         t for t in READ_TOOLS
         if t["function"]["name"] in ("get_people", "get_recent_interactions")
     ] + [
         t for t in WRITE_TOOLS
-        if t["function"]["name"] == "log_interaction"
+        if t["function"]["name"] in ("log_interaction", "create_person")
     ],
     "chef": [
         t for t in READ_TOOLS
         if t["function"]["name"] in ("get_meal_recommendation", "get_cook_vs_order", "get_food_log")
     ] + [
         t for t in WRITE_TOOLS
-        if t["function"]["name"] == "log_meal"
+        if t["function"]["name"] in ("log_meal", "update_meal_entry")
     ],
 }
