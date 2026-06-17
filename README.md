@@ -170,6 +170,13 @@ The `scope` parameter (`circuit` / `canopy` / `chef`) restricts tool access when
 
 ---
 
+## Docs
+
+- [Deferred & future work](docs/DEFERRED.md) — ecosystem backlog (master in Circuit repo)
+- [PLAN.md](PLAN.md) · [CLAUDE.md](CLAUDE.md) — developer reference
+
+---
+
 ## Project structure
 
 ```

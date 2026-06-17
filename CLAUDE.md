@@ -85,11 +85,11 @@ On Render, set `CIRCUIT_URL`, `CANOPY_URL`, `CHEF_URL` as environment variables 
 - **Terminal-first UI**: JetBrains Mono everywhere, phosphor (green-on-black) theme, no rounded cards, no icons
 - **Message role prefixes**: `~` AI, `>` user, `#` system, `!` error
 - **Diary suppresses AI prose**: only a structured confirmation is shown — `✓ circuit create_task × 2`
-- **Groq-only backend** for MVP; multi-provider (Claude, GPT-4o, Gemini, Ollama) is a future phase
+- **Groq-only backend** — `GROQ_API_KEY` required; multi-provider is **not planned** (see [docs/DEFERRED.md](docs/DEFERRED.md))
 - **Diary model fixed**: always `llama-3.3-70b-versatile` regardless of user's selected chat model — most reliable for tool calls
 - **Conduit as orchestrator only**: sibling apps have no inter-app calls
 - **Mode UI (2026-06)**: `AgentToggle` / `DiaryToggle` removed — mode switching via inline tabs in `TerminalShell` modebar
-- **Session history**: chat/agent turns saved to `POST /api/history`; `@user` menu + `/sessions` / `/resume <id>` for list/resume/delete (diary not saved yet)
+- **Session history**: chat/agent/diary turns saved via `saveSession` → `POST /api/history`; `@user` menu + `/sessions` / `/resume <id>` for list/resume/delete
 
 ---
 
@@ -144,9 +144,7 @@ The wakeup router retries every 10s for up to 90s to handle Render cold-start 50
 
 ## Current known issues
 
-**Sibling app auth in production** — conduit passes `conduit_auth_token` as Bearer to sibling apps. This works when all apps share the same Cortex instance. If they don't, sibling apps will reject the token. No fix designed yet.
-
-**Diary session save** — diary mode does not call `saveSession` after routing (chat/agent do). Optional follow-up.
+**Sibling app auth in production** — conduit passes `conduit_auth_token` as Bearer to sibling apps. This works when all apps share the same Cortex instance. If they don't, sibling apps will reject the token. See [docs/DEFERRED.md](docs/DEFERRED.md).
 
 ---
 
@@ -180,5 +178,4 @@ Diary entries are saved to session history after routing (same as agent/chat).
 
 ## Future work
 
-- Multi-provider models (Claude, GPT-4o, Gemini, Ollama)
-- Production Cortex sibling-auth unification when apps don't share one Cortex instance
+See **[docs/DEFERRED.md](docs/DEFERRED.md)** — production sibling-auth, optional `get_interactions_for_person`. Groq-only; no multi-provider.
