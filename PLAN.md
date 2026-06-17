@@ -102,9 +102,10 @@ Conduit passes `conduit_auth_token` as the `sibling_token` to circuit/canopy/che
 
 ### ⬜ Future work
 
-- Multi-provider models (Claude, GPT-4o, Gemini, Ollama)
 - Production Cortex sibling-auth unification when apps don't share one Cortex instance
 - `get_interactions_for_person` — dedicated tool with person resolution by name (optional)
+
+**AI policy:** Groq is the only supported LLM provider (`GROQ_API_KEY`). No Anthropic/OpenAI/Gemini backends.
 
 #### Phase D — Additional write tools (shipped 2026-06)
 - [x] `update_task` — circuit `PATCH /api/tasks/{id}`
@@ -132,7 +133,7 @@ Auth flow:
 
 ## Decision Log
 
-- **Groq-only backend**: MVP uses Groq; multi-provider (Claude, GPT-4o, Gemini, Ollama) is a later phase
+- **Groq-only backend**: `GROQ_API_KEY` is required for all AI (agent, diary, chat). No Anthropic/OpenAI fallbacks.
 - **Diary mode suppresses AI response**: confirmed design — only a structured confirmation is shown, not a full model reply
 - **Terminal UI is Conduit-only** — sibling apps keep `/chat` (native per-app Groq agent); no terminal views or diary routing in Circuit/Canopy/Chef
 - **Conduit as orchestrator only**: circuit/canopy/chef have no inter-app calls; all coordination goes through conduit
