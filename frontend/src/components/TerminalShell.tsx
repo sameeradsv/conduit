@@ -410,6 +410,15 @@ export function TerminalShell() {
             );
           }
           setStatus("ready");
+          if (digestContent) {
+            saveSession(
+              [
+                { role: "user", content: "/digest" },
+                { role: "assistant", content: digestContent },
+              ],
+              model,
+            );
+          }
         } catch (err: unknown) {
           const isAbort = err instanceof Error && err.name === "AbortError";
           if (digestId !== null) {
@@ -488,6 +497,15 @@ export function TerminalShell() {
             );
           }
           setStatus("ready");
+          if (fullContent) {
+            saveSession(
+              [
+                { role: "user", content: trimmed },
+                { role: "assistant", content: fullContent },
+              ],
+              model,
+            );
+          }
         } catch (err: unknown) {
           const isAbort = err instanceof Error && err.name === "AbortError";
           if (aiId !== null) {
@@ -637,7 +655,7 @@ export function TerminalShell() {
     abortRef.current?.abort();
   }, []);
 
-  const currentModel = MODELS.find((m) => m.id === model)?.label ?? model;
+  const currentModel = models.find((m) => m.id === model)?.label ?? model;
 
   return (
     <div className="shell" data-mode={chatMode}>

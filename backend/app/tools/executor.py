@@ -23,20 +23,34 @@ def _headers(token: Optional[str]) -> dict:
     return {}
 
 
+def _items(data) -> list:
+    if isinstance(data, list):
+        return data
+    if isinstance(data, dict):
+        for key in ("items", "data", "results"):
+            value = data.get(key)
+            if isinstance(value, list):
+                return value
+        return []
+    return []
+
+
 def _trim_tasks(tasks: list) -> list:
     keep = ("text", "completed", "tag", "effort", "urgency", "importance", "due_date", "tiny_step")
-    return [{k: t.get(k) for k in keep} for t in tasks]
+    return [{k: t.get(k) for k in keep} for t in tasks if isinstance(t, dict)]
 
 
 def _trim_people(people: list) -> list:
     keep = ("id", "name", "relationship", "notes")
-    return [{k: p.get(k) for k in keep} for p in people]
+    return [{k: p.get(k) for k in keep} for p in people if isinstance(p, dict)]
 
 
 def _trim_interactions(items: list) -> list:
     now = now_utc_naive()
     result = []
     for i in items:
+        if not isinstance(i, dict):
+            continue
         raw_at = i.get("occurred_at")
         at_utc = parse_canopy_stored(raw_at) if raw_at else None
         entry: dict = {
@@ -113,7 +127,7 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
             elif name == "get_my_tasks":
                 r = await client.get(f"{settings.circuit_url}/api/tasks", headers=h)
                 r.raise_for_status()
-                return json.dumps(_trim_tasks(r.json() or []))
+                return json.dumps(_trim_tasks(_items(r.json())))
 
             elif name == "get_task_summary":
                 r = await client.get(f"{settings.circuit_url}/api/summary", headers=h)
@@ -126,7 +140,7 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
                     params["q"] = args["search"]
                 r = await client.get(f"{settings.canopy_url}/api/people", params=params, headers=h)
                 r.raise_for_status()
-                return json.dumps(_trim_people(r.json() or []))
+                return json.dumps(_trim_people(_items(r.json())))
 
             elif name == "get_recent_interactions":
                 params: dict = {"limit": args.get("limit", 20)}
@@ -136,7 +150,7 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
                     params["tag"] = args["tag"]
                 r = await client.get(f"{settings.canopy_url}/api/interactions", params=params, headers=h)
                 r.raise_for_status()
-                return json.dumps(_trim_interactions(r.json() or []))
+                return json.dumps(_trim_interactions(_items(r.json())))
 
             elif name == "get_interactions_for_person":
                 person_name = (args.get("person_name") or "").strip()
@@ -148,8 +162,7 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
                     headers=h,
                 )
                 r.raise_for_status()
-                people_raw = r.json()
-                people = people_raw if isinstance(people_raw, list) else people_raw.get("items", [])
+                people = _items(r.json())
                 trimmed = _trim_people(people)
                 if not trimmed:
                     return json.dumps({"error": "No person found", "query": person_name})
@@ -169,7 +182,7 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
                 r2.raise_for_status()
                 return json.dumps({
                     "person": person,
-                    "interactions": _trim_interactions(r2.json() or []),
+                    "interactions": _trim_interactions(_items(r2.json())),
                 })
 
             elif name == "get_meal_recommendation":
@@ -191,7 +204,7 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
                     headers=h,
                 )
                 r.raise_for_status()
-                entries = r.json() or []
+                entries = _items(r.json())
                 trimmed = [
                     {
                         "decision": e.get("decision"),
@@ -201,6 +214,7 @@ async def execute_tool(name: str, args: dict, token: Optional[str] = None) -> st
                         "timestamp": e.get("timestamp"),
                     }
                     for e in entries
+                    if isinstance(e, dict)
                 ]
                 # Chef timestamps are naive IST on the wire
                 for row in trimmed:

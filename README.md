@@ -16,6 +16,8 @@ Terminal-style AI hub for the personal app ecosystem. Query and update your task
 | **Diary** | `/diary` or toggle | Full-screen compose (Kalam hand font); past-date entries in IST; routes to apps |
 | **Digest** | `/digest` | One-shot daily briefing from all three apps |
 
+Completed chat, agent, diary, digest, and scoped `@circuit` / `@canopy` / `@chef` turns are saved to session history when signed in.
+
 ### Agent mode — example questions
 
 - "What are my tasks today?" · "What's most urgent right now?"
@@ -87,6 +89,9 @@ GROQ_API_KEY=...              # required — free at console.groq.com
 CIRCUIT_URL=http://localhost:8001
 CANOPY_URL=http://localhost:8002
 CHEF_URL=http://localhost:8003
+
+# Local frontend origins only; production Render config allows GitHub Pages by default
+CORS_ORIGINS=http://localhost:3000,http://localhost:3001
 
 # WebAuthn (passkey login) — set these in production
 WEBAUTHN_RP_ID=your-domain.com
@@ -162,7 +167,7 @@ The `scope` parameter (`circuit` / `canopy` / `chef`) restricts tool access when
 
 ## Deploy (GitHub Pages + Render)
 
-1. **Render backend:** New → Blueprint → connect repo → `render.yaml`. Set `GROQ_API_KEY`, `CIRCUIT_URL`, `CANOPY_URL`, `CHEF_URL` in the Render dashboard.
+1. **Render backend:** New → Blueprint → connect repo → `render.yaml`. Set `GROQ_API_KEY`, `CIRCUIT_URL`, `CANOPY_URL`, `CHEF_URL` in the Render dashboard. `CORS_ORIGINS` defaults to GitHub Pages; add extra production origins explicitly if needed.
 2. **GitHub variable:** `CONDUIT_API_URL` = Render backend URL (no trailing slash).
 3. Push to `main` — GitHub Actions builds the static export and deploys to Pages.
 

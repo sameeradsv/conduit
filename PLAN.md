@@ -1,6 +1,6 @@
 # Conduit — Implementation Plan
 
-Last updated: 2026-06-17
+Last updated: 2026-06-18
 
 ## Vision
 
@@ -47,6 +47,7 @@ The same terminal-like shell is also available inside each sibling app at `/chat
 - Three chat modes: `chat` / `agent` / `diary` (persisted to localStorage; **inline mode tabs** in `TerminalShell` topbar)
 - Slash commands: `/help`, `/chat`, `/agent`, `/diary`, `/model`, `/system`, `/clear`, `/logout`, `/models`, `/sessions`, `/resume`
 - `/digest` command: fetches daily briefing from all three apps
+- `/digest`, scoped `@circuit` / `@canopy` / `@chef`, chat, agent, and diary turns are saved to session history after successful completion
 - Diary mode: suppresses AI response, shows confirmation summary (`✓ circuit create_task × 2`)
 - PWA installable, deployed on GitHub Pages + Render
 - WebAuthn passkey / biometric sign-in (`usePasskey` hook, `PasskeyBanner` post-login prompt)
@@ -56,7 +57,7 @@ The same terminal-like shell is also available inside each sibling app at `/chat
 ### ✅ Implemented (Phase A — bug fixes, 2026-05-26)
 
 - **`/digest` routing bug fixed** — digest block now runs before the slash guard in `TerminalShell.tsx`
-- **CORS expanded** — conduit backend now allows localhost `:3002`, `:3003`, `:3004` for sibling app dev servers
+- **CORS configured by environment** — local dev uses `.env`; production defaults only allow the GitHub Pages origin
 - **`scope` param added** to `/api/agent/chat` — restricts tools to circuit / canopy / chef subsets; drives scoped system prompts
 
 ### ✅ Implemented (Phase B — diary UI, 2026-05-26)
@@ -85,6 +86,15 @@ The same terminal-like shell is also available inside each sibling app at `/chat
 - **Agent prompts** — use `timing` field from tools; do not infer past/upcoming from observation text alone
 - **`get_energy` URL fix** — canopy `/api/sync/energy`, chef `/sync/energy`; Chef response field mapping corrected
 
+### ✅ Implemented (Phase F — digest/session hardening, 2026-06-18)
+
+- **Sibling read response normalization** — read tools tolerate `null`, bare lists, and common `{items|data|results}` envelopes from sibling APIs
+- **Malformed row guards** — task, people, interaction, and food-log trimmers skip non-object rows instead of surfacing `NoneType`/attribute errors
+- **`/digest` error hardening** — digest now degrades to empty tool data when a sibling returns nullable list payloads
+- **Frontend model label bug fixed** — `TerminalShell` now uses the live `models` state instead of an undefined `MODELS` symbol
+- **Session history completed** — `/digest` and scoped `@app` chats now save successful responses, matching chat/agent/diary behavior
+- **Production CORS tightened** — Pydantic defaults and `render.yaml` no longer include localhost origins; local values belong in `.env`
+
 ---
 
 ### 🐛 Remaining known issues
@@ -97,8 +107,8 @@ Conduit passes `conduit_auth_token` as the `sibling_token` to circuit/canopy/che
 #### 2. Sibling URLs are hardcoded to localhost
 **Resolved for production:** set `CIRCUIT_URL`, `CANOPY_URL`, `CHEF_URL` on Render. Local dev uses `.env` (see `backend/.env.example`).
 
-#### 3. Diary session history
-**Resolved (2026-06):** Diary mode calls `saveSession` after routing so diary threads appear in `/sessions` history.
+#### 3. Session history coverage
+**Resolved (2026-06-18):** Diary, digest, scoped app chats, chat, and agent responses save to `/sessions` history after successful completion.
 
 ### ⬜ Future work
 
