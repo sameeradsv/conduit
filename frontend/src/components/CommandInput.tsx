@@ -3,7 +3,7 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 
 interface Props {
-  onSend: (text: string) => void;
+  onSend: (text: string) => void | Promise<boolean | void>;
   onAbort: () => void;
   disabled: boolean;
   streaming: boolean;
@@ -20,6 +20,8 @@ const SLASH_COMMANDS = [
   { cmd: "/diary",          desc: "toggle diary mode (silent routing)" },
   { cmd: "/digest",         desc: "fetch daily briefing from all apps" },
   { cmd: "/wakeup",         desc: "ping circuit, canopy, chef to wake from idle" },
+  { cmd: "/sessions",       desc: "list saved chat sessions" },
+  { cmd: "/resume ",        desc: "resume a saved session  e.g. /resume 12" },
   { cmd: "/passkey",        desc: "enable biometric sign-in on this device" },
   { cmd: "/clear",          desc: "clear chat history" },
   { cmd: "/logout",         desc: "sign out" },
@@ -50,12 +52,12 @@ export function CommandInput({ onSend, onAbort, disabled, streaming, placeholder
   const hasSugg = suggestions.length > 0;
 
   const submit = useCallback(() => {
-    if (!value.trim()) return;
+    if (!value.trim() || disabled || streaming) return;
     setHistory((prev) => [value, ...prev.slice(0, 99)]);
     setHistoryIdx(-1);
     onSend(value);
     setValue("");
-  }, [value, onSend]);
+  }, [value, disabled, streaming, onSend]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -159,6 +161,8 @@ export function CommandInput({ onSend, onAbort, disabled, streaming, placeholder
           value={value}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
+          disabled={disabled}
+          aria-disabled={disabled}
           placeholder={
             streaming
               ? "streaming…"
@@ -172,7 +176,7 @@ export function CommandInput({ onSend, onAbort, disabled, streaming, placeholder
       </div>
       <div className="helprow">
         {streaming ? (
-          <button className="stop-btn" onClick={onAbort}>
+          <button type="button" className="stop-btn" onClick={onAbort}>
             [stop]
           </button>
         ) : (

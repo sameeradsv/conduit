@@ -1,6 +1,6 @@
 # Conduit — Implementation Plan
 
-Last updated: 2026-06-18
+Last updated: 2026-06-19
 
 ## Vision
 
@@ -95,6 +95,15 @@ The same terminal-like shell is also available inside each sibling app at `/chat
 - **Session history completed** — `/digest` and scoped `@app` chats now save successful responses, matching chat/agent/diary behavior
 - **Production CORS tightened** — Pydantic defaults and `render.yaml` no longer include localhost origins; local values belong in `.env`
 
+### ✅ Implemented (Phase G — auth/UI robustness, 2026-06-19)
+
+- **History authorization tightened** — session save/list/resume/delete now require an authenticated user even when general API auth is optional
+- **Model list cache** — `/api/models` caches Groq model metadata briefly to avoid repeated network calls
+- **Text-format tool fallback hardened** — malformed model-emitted function JSON is skipped instead of breaking the stream
+- **Streaming input lock** — command and diary inputs cannot submit or mutate active entries while a request is streaming
+- **Diary save status fixed** — diary footer only shows `saved` after the parent send path reports success
+- **WebAuthn Render placeholders** — `render.yaml` declares production passkey origin/RP env vars
+
 ---
 
 ### 🐛 Remaining known issues
@@ -108,7 +117,7 @@ Conduit passes `conduit_auth_token` as the `sibling_token` to circuit/canopy/che
 **Resolved for production:** set `CIRCUIT_URL`, `CANOPY_URL`, `CHEF_URL` on Render. Local dev uses `.env` (see `backend/.env.example`).
 
 #### 3. Session history coverage
-**Resolved (2026-06-18):** Diary, digest, scoped app chats, chat, and agent responses save to `/sessions` history after successful completion.
+**Resolved (2026-06-19):** Diary, digest, scoped app chats, chat, and agent responses save to `/sessions` history after successful completion; history endpoints require authentication.
 
 ### ⬜ Future work
 

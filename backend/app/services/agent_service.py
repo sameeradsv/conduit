@@ -89,6 +89,19 @@ _DIARY_MODEL_CHAIN = [
 _FUNC_RE = re.compile(r"<function=(\w+)[^{<]*(\{.*?\})?\s*(?:</function>)?", re.DOTALL)
 
 
+def _parse_function_text(text: str) -> list[dict]:
+    calls = []
+    for name, args_str in _FUNC_RE.findall(text):
+        if not name:
+            continue
+        try:
+            args = json.loads(args_str) if args_str else {}
+        except json.JSONDecodeError:
+            continue
+        calls.append({"name": name, "args": args})
+    return calls
+
+
 async def _call_model(client: AsyncGroq, kwargs: dict, fallback_chain: list | None = None) -> tuple:
     """Call Groq; on 429 retry through fallback_chain. Returns (response, model_used)."""
     models = fallback_chain if fallback_chain else [kwargs["model"]]
@@ -128,14 +141,7 @@ def _parse_failed_generation(body: dict) -> list[dict]:
     args are still usable if we extract them ourselves.
     """
     fg = (body.get("error") or {}).get("failed_generation", "")
-    calls = []
-    for name, args_str in _FUNC_RE.findall(fg):
-        try:
-            args = json.loads(args_str) if args_str else {}
-        except json.JSONDecodeError:
-            continue
-        calls.append({"name": name, "args": args})
-    return calls
+    return _parse_function_text(fg)
 
 
 def _coerce_args(name: str, args: dict) -> dict:
@@ -350,11 +356,7 @@ async def stream_agent_chat(
         content = choice.message.content or ""
         # llama-3.1-8b-instant sometimes emits text-format function calls with finish_reason="stop"
         # instead of structured tool_calls. Detect and execute them rather than echoing the raw text.
-        text_calls = [
-            {"name": name, "args": json.loads(args_str) if args_str else {}}
-            for name, args_str in _FUNC_RE.findall(content)
-            if name  # skip empty matches
-        ]
+        text_calls = _parse_function_text(content)
         if text_calls:
             for tc in text_calls:
                 name, args = tc["name"], _coerce_args(tc["name"], tc["args"])

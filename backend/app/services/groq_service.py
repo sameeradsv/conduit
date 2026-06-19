@@ -1,4 +1,5 @@
 import os
+import time
 from typing import AsyncIterator
 
 import httpx
@@ -15,10 +16,17 @@ _FALLBACK_MODELS = [
 
 # Non-chat model prefixes to exclude from the picker
 _EXCLUDE_PREFIXES = ("whisper", "distil-whisper", "playai-", "guard-", "llama-guard")
+_MODELS_TTL_SECONDS = 300
+_models_cache: tuple[float, list[dict]] | None = None
 
 
 async def fetch_models() -> list[dict]:
     """Fetch live model list from Groq. Falls back to _FALLBACK_MODELS on error."""
+    global _models_cache
+    now = time.monotonic()
+    if _models_cache and now - _models_cache[0] < _MODELS_TTL_SECONDS:
+        return _models_cache[1]
+
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
         return _FALLBACK_MODELS
@@ -30,7 +38,8 @@ async def fetch_models() -> list[dict]:
             )
         if r.status_code != 200:
             return _FALLBACK_MODELS
-        items = r.json().get("data", [])
+        data = r.json()
+        items = data.get("data", []) if isinstance(data, dict) else []
         models = []
         for m in sorted(items, key=lambda x: x.get("id", "")):
             mid = m.get("id", "")
@@ -42,7 +51,9 @@ async def fetch_models() -> list[dict]:
                 "label": label,
                 "context": m.get("context_window", 8192),
             })
-        return models if models else _FALLBACK_MODELS
+        result = models if models else _FALLBACK_MODELS
+        _models_cache = (now, result)
+        return result
     except Exception:
         return _FALLBACK_MODELS
 

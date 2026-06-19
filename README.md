@@ -133,7 +133,7 @@ App: http://localhost:3000
 
 ## Available models (Groq)
 
-Model list is fetched live from Groq's API on each `/api/models` request.
+Model list is fetched from Groq's API on `/api/models` and cached briefly by the backend.
 Non-chat models (Whisper, TTS, guard) are filtered out automatically.
 Falls back to `llama-3.3-70b-versatile` + `llama-3.1-8b-instant` if Groq is unreachable.
 
@@ -167,7 +167,7 @@ The `scope` parameter (`circuit` / `canopy` / `chef`) restricts tool access when
 
 ## Deploy (GitHub Pages + Render)
 
-1. **Render backend:** New → Blueprint → connect repo → `render.yaml`. Set `GROQ_API_KEY`, `CIRCUIT_URL`, `CANOPY_URL`, `CHEF_URL` in the Render dashboard. `CORS_ORIGINS` defaults to GitHub Pages; add extra production origins explicitly if needed.
+1. **Render backend:** New → Blueprint → connect repo → `render.yaml`. Set `GROQ_API_KEY`, `CIRCUIT_URL`, `CANOPY_URL`, `CHEF_URL`, `WEBAUTHN_RP_ID`, and `WEBAUTHN_ORIGIN` in the Render dashboard. `CORS_ORIGINS` defaults to GitHub Pages; add extra production origins explicitly if needed.
 2. **GitHub variable:** `CONDUIT_API_URL` = Render backend URL (no trailing slash).
 3. Push to `main` — GitHub Actions builds the static export and deploys to Pages.
 

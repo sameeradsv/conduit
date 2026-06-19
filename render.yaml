@@ -3,6 +3,7 @@
 #   GROQ_API_KEY   — from console.groq.com/keys
 #   DATABASE_URL   — from Neon (postgres://... connection string)
 #   CORTEX_AUTH_URL — URL of your deployed cortex-auth service
+#   WEBAUTHN_RP_ID / WEBAUTHN_ORIGIN - production passkey domain/origin
 services:
   - type: web
     name: conduit-api
@@ -23,5 +24,9 @@ services:
         sync: false
       - key: AUTH_REQUIRED
         value: "false"
+      - key: WEBAUTHN_RP_ID
+        sync: false
+      - key: WEBAUTHN_ORIGIN
+        sync: false
       - key: PYTHON_VERSION
         value: "3.12"

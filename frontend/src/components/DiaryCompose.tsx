@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { todayIST, fmtDateIST, istNoonDate, offsetDateIST } from "@/lib/tz";
 
 interface Props {
-  onSend: (text: string) => void;
+  onSend: (text: string) => void | Promise<boolean | void>;
   onAbort: () => void;
   onBack: () => void;
   disabled: boolean;
@@ -38,24 +38,33 @@ export function DiaryCompose({ onSend, onAbort, onBack, disabled, streaming }: P
   const isPast = entryDate !== today;
   const isToday = entryDate === today;
 
-  const submit = useCallback(() => {
+  const submit = useCallback(async () => {
     const trimmed = value.trim();
     if (!trimmed || streaming) return;
     setSaveStatus("saving…");
     const text = isPast
       ? `[Entry date: ${entryDate}]\n\n${trimmed}`
       : trimmed;
-    onSend(text);
+    let result: boolean | void;
+    try {
+      result = await onSend(text);
+    } catch {
+      result = false;
+    }
+    if (result === false) {
+      setSaveStatus("not saved");
+      return;
+    }
+    setSaveStatus("saved");
     setValue("");
   }, [value, streaming, onSend, isPast, entryDate]);
 
   useEffect(() => {
-    if (!streaming && saveStatus === "saving…") {
-      setSaveStatus("saved");
+    if (saveStatus === "saved" || saveStatus === "not saved") {
       const t = setTimeout(() => setSaveStatus(null), 3000);
       return () => clearTimeout(t);
     }
-  }, [streaming, saveStatus]);
+  }, [saveStatus]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -81,13 +90,15 @@ export function DiaryCompose({ onSend, onAbort, onBack, disabled, streaming }: P
 
       {/* date header */}
       <div className="diary-head">
-        <button className="diary-back" onClick={onBack} aria-label="Exit diary mode">
+        <button type="button" className="diary-back" onClick={onBack} aria-label="Exit diary mode">
           ← back
         </button>
         <div className="diary-date-wrap" title="Click to change date">
           <button
+            type="button"
             className="diary-nav-btn"
             onClick={() => setEntryDate((d) => offsetDateIST(d, -1))}
+            disabled={streaming}
             aria-label="Previous day"
           >
             ‹
@@ -97,9 +108,10 @@ export function DiaryCompose({ onSend, onAbort, onBack, disabled, streaming }: P
           </span>
           {isPast && <span className="diary-past-badge">past entry</span>}
           <button
+            type="button"
             className="diary-nav-btn"
             onClick={() => setEntryDate((d) => offsetDateIST(d, 1))}
-            disabled={isToday}
+            disabled={isToday || streaming}
             aria-label="Next day"
           >
             ›
@@ -110,6 +122,7 @@ export function DiaryCompose({ onSend, onAbort, onBack, disabled, streaming }: P
             className="diary-date-input"
             value={entryDate}
             max={today}
+            disabled={streaming}
             onChange={(e) => {
               if (e.target.value) setEntryDate(e.target.value);
             }}
@@ -126,6 +139,7 @@ export function DiaryCompose({ onSend, onAbort, onBack, disabled, streaming }: P
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
+          disabled={streaming}
           placeholder={
             isPast
               ? `what happened on ${fmtDateIST(istNoonDate(entryDate), { month: "long", day: "numeric" })}…`
@@ -149,11 +163,12 @@ export function DiaryCompose({ onSend, onAbort, onBack, disabled, streaming }: P
           </span>
         )}
         {streaming ? (
-          <button className="diary-save-btn" onClick={onAbort}>
+          <button type="button" className="diary-save-btn" onClick={onAbort}>
             stop
           </button>
         ) : (
           <button
+            type="button"
             className="diary-save-btn"
             onClick={submit}
             disabled={!value.trim() || disabled}

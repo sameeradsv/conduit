@@ -565,6 +565,7 @@ export function TerminalShell() {
               model,
             );
           }
+          return true;
         } catch (err: unknown) {
           const isAbort = err instanceof Error && err.name === "AbortError";
           if (!isAbort) {
@@ -577,8 +578,8 @@ export function TerminalShell() {
           } else {
             setStatus("ready");
           }
+          return false;
         }
-        return;
       }
 
       // Create the assistant slot lazily on the first delta so that
@@ -727,9 +728,10 @@ export function TerminalShell() {
       <div className="modebar" role="tablist" aria-label="Chat mode">
         {MODES.map((m) => (
           <button
+            type="button"
             key={m.id}
             role="tab"
-            aria-current={chatMode === m.id}
+            aria-selected={chatMode === m.id}
             className="mode"
             onClick={() => {
               if (chatMode === m.id) return;

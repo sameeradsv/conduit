@@ -1,14 +1,12 @@
 """Chat history — save and retrieve past conversations."""
 
 from datetime import datetime
-from typing import Optional
-
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.deps.auth import optional_auth_user
+from app.deps.auth import require_user
 from app.models import ChatMessageModel, ChatSession, User
 
 router = APIRouter(prefix="/api/history", tags=["history"])
@@ -59,10 +57,10 @@ def _derive_title(messages: list[MessageIn]) -> str:
 def save_session(
     body: SessionIn,
     db: Session = Depends(get_db),
-    user: Optional[User] = Depends(optional_auth_user),
+    user: User = Depends(require_user),
 ):
     session = ChatSession(
-        user_id=user.id if user else None,
+        user_id=user.id,
         model=body.model,
         title=_derive_title(body.messages),
     )
@@ -86,10 +84,9 @@ def save_session(
 def list_sessions(
     limit: int = 20,
     db: Session = Depends(get_db),
-    user: Optional[User] = Depends(optional_auth_user),
+    user: User = Depends(require_user),
 ):
-    if user is None:
-        return []
+    limit = min(max(limit, 1), 100)
     return (
         db.query(ChatSession)
         .filter(ChatSession.user_id == user.id)
@@ -103,12 +100,12 @@ def list_sessions(
 def get_session(
     session_id: int,
     db: Session = Depends(get_db),
-    user: Optional[User] = Depends(optional_auth_user),
+    user: User = Depends(require_user),
 ):
     session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    if user is not None and session.user_id != user.id:
+    if session.user_id != user.id:
         raise HTTPException(status_code=403, detail="Forbidden")
     return session
 
@@ -117,12 +114,12 @@ def get_session(
 def delete_session(
     session_id: int,
     db: Session = Depends(get_db),
-    user: Optional[User] = Depends(optional_auth_user),
+    user: User = Depends(require_user),
 ):
     session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
     if not session:
         return
-    if user is not None and session.user_id != user.id:
+    if session.user_id != user.id:
         raise HTTPException(status_code=403, detail="Forbidden")
     db.delete(session)
     db.commit()
