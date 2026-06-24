@@ -34,6 +34,7 @@ venv/
 *.egg-info/
 
 # Backend local data
+data/
 backend/data/
 
 # Environment

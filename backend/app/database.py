@@ -1,16 +1,12 @@
-import os
 from pathlib import Path
 
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
-DATA_DIR.mkdir(parents=True, exist_ok=True)
+from app.config import settings
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    f"sqlite:///{DATA_DIR / 'conduit.db'}",
-)
+DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+DATABASE_URL = settings.database_url
 
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
 # Neon drops idle connections — pre-ping detects stale ones, pool_recycle discards
@@ -18,7 +14,7 @@ connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite")
 pool_kwargs = (
     {}
     if DATABASE_URL.startswith("sqlite")
-    else {"pool_pre_ping": True, "pool_recycle": 280}
+    else {"pool_pre_ping": True, "pool_recycle": 280, "pool_size": 2, "max_overflow": 3}
 )
 
 engine = create_engine(DATABASE_URL, connect_args=connect_args, **pool_kwargs)
@@ -90,3 +86,18 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def init_db() -> None:
+    from app import models  # noqa: F401
+
+    if DATABASE_URL.startswith("sqlite"):
+        db_path = Path(DATABASE_URL.replace("sqlite:///", ""))
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+    Base.metadata.create_all(bind=engine)
+    _migrate_postgres()
+
+
+if __name__ == "__main__":
+    init_db()
+    print("Database schema is ready.")

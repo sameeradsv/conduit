@@ -15,12 +15,14 @@ class Settings(BaseSettings):
     cors_origins: str = _default_cors
     auth_required: bool = False
     groq_api_key: str = ""
-    # Optional: URL of the shared Cortex Auth Server e.g. "https://cortex-auth.onrender.com"
+    # Optional: URL of the shared Cortex Auth Server e.g. "https://cortex-auth.vercel.app"
     cortex_auth_url: str = ""
     # Sibling app base URLs (no trailing slash) — must be set via env vars
     circuit_url: str = ""
     canopy_url: str = ""
     chef_url: str = ""
+    # Keep enabled for local dev; disable on Vercel after the database is initialized.
+    init_db_on_startup: bool = True
 
     @property
     def cors_origins_list(self) -> list[str]:

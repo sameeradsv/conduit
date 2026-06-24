@@ -15,25 +15,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy-backend:
-    name: Deploy API (Render)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Render deploy
-        env:
-          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
-        run: |
-          if [ -n "$RENDER_DEPLOY_HOOK" ]; then
-            curl -fsS -X POST "$RENDER_DEPLOY_HOOK"
-          else
-            echo "RENDER_DEPLOY_HOOK not set — use Render Blueprint auto-deploy from render.yaml"
-          fi
-
   build-frontend:
     name: Build UI for GitHub Pages
     runs-on: ubuntu-latest
-    needs: deploy-backend
-    if: always() && !cancelled()
     steps:
       - uses: actions/checkout@v4
 
@@ -56,7 +40,7 @@ jobs:
         working-directory: frontend
         env:
           GITHUB_PAGES: "true"
-          NEXT_PUBLIC_API_URL: ${{ vars.CONDUIT_API_URL || 'https://conduit-api.onrender.com' }}
+          NEXT_PUBLIC_API_URL: ${{ vars.CONDUIT_API_URL || 'https://conduit-api.vercel.app' }}
           NEXT_PUBLIC_CORTEX_URL: ${{ vars.NEXT_PUBLIC_CORTEX_URL }}
         run: npm run build:pages
 
