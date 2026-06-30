@@ -268,9 +268,8 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .feed::-webkit-scrollbar-thumb { background: var(--dim-2); border-radius: 0; }
 .feed::-webkit-scrollbar-track { background: transparent; }
 
-/* diary mode — full screen, hide all chrome */
+/* diary mode — focused writing surface; keep topbar session controls visible */
 .shell[data-mode="diary"] .feed      { display: none; }
-.shell[data-mode="diary"] .topbar    { display: none; }
 .shell[data-mode="diary"] .modebar   { display: none; }
 .shell[data-mode="diary"] .statusbar { display: none; }
 
