@@ -45,3 +45,6 @@ backend/data/
 # OS
 .DS_Store
 Thumbs.db
+
+# Claude Code local settings (machine-specific tool permissions)
+.claude/settings.local.json
