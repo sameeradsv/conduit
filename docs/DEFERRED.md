@@ -17,3 +17,12 @@
 ## Rejected
 
 - Multi-provider LLM (Groq-only policy)
+
+
+## Default-branch push policy (2026-07-13)
+
+**Decision:** Completed work must be committed and pushed to the remote default branch. For this repo, the remote default branch is `main`.
+
+**Reason:** Agent-created branches are easy to strand when work is complete but not merged, which makes the deployed/default line drift from the actual finished state.
+
+**Implication:** If work is pushed to any branch other than `main` before it is merged, move/cherry-pick or merge it onto `main`, push `main`, and verify the default branch contains the change before closing the task.
